@@ -179,8 +179,16 @@ def hr_app_dashboard_view(request):
 def hr_app_archive_view(request):
     cutoff_date = timezone.now() - MEMBERTOOLS_APP_ARCHIVE_TIME
     applications = Application.objects.select_related(
-        "user", "form", "form__corp", "form__title"
-    ).filter(user=request.user, approved__isnull=False, created__lte=cutoff_date)
+        "eve_character__character_ownership__user", "form", "form__corp", "form__title"
+    ).filter(
+        eve_character__character_ownership__user=request.user,
+        decision__in=[
+            Application.DECISION_ACCEPT,
+            Application.DECISION_REJECT,
+            Application.DECISION_WITHDRAW,
+        ],
+        decision_on__lte=cutoff_date,
+    )
 
     context = {
         "page_title": _("Past Applications"),
