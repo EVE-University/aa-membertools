@@ -1,0 +1,66 @@
+{% extends "membertools/base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block inside_content %}
+<div class="container-fluid row panel panel-primary">
+    <div class="panel-body">
+        {% if form.pre_text %}
+        <div class="row form-pre-text">
+            <div class="bs-callout bs-callout-info">
+                {{form.pre_text|linebreaks}}
+            </div>
+        </div>
+        {% endif %}
+        <div class="row">
+            <form class="form-signin">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label class="control-label" for="id_character">{% translate "Character" %}</label>
+                    <div class=" ">
+                        <select class="form-control" id="id_character" name="selected_character_id">
+                            {% for character in characters %}
+                                {% if selected_character_id %}
+                            <option value="{{character.character_id}}"{% if character.character_id == selected_character_id %} selected{% endif %}>{{character.character_name}}</option>
+                                {% else %}
+                            <option value="{{character.character_id}}"{% if character == main_character %} selected{% endif %}>{{character.character_name}}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-text text-center text-muted">Please select the character you are applying on. If you do not see your character please <a href="{% url 'authentication:add_character' %}">click here</a> to add it first prior to filling application.</div>
+                </div>
+        
+                {% for question in questions %}
+                    <div class="form-group">
+                        <label class="control-label" for="id_{{ question.pk }}">{{ question.title }}</label>
+                        <div class=" ">
+                        {% for choice in question.choices.all %}
+                            {% if question.multi_select == False %}
+                            <input type="radio" name="{{ question.pk }}" id="id_{{ question.pk }}" value="{{ choice.choice_text }}" {% if choice.choice_text == question.answer %}checked {% endif %}/>
+                            {% else %}
+                            <input type="checkbox" name="{{ question.pk }}" id="id_{{ question.pk }}" value="{{ choice.choice_text }}" {% if choice.choice_text in question.answer %}checked {% endif %}/>
+                            {% endif %}
+                            <label for="choice{{ forloop.counter }}">{{ choice.choice_text }}</label><br />
+                        {% empty %}
+                            <textarea class="form-control" cols="30" id="id_{{ question.pk }}" name="{{ question.pk }}" rows="4">{% if question.answer %}{{ question.answer }}{% endif %}</textarea>
+                        {% endfor %}
+                        </div>
+                        {% if question.help_text %}
+                            <div class="form-text text-center text-muted">{{ question.help_text }}</div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+                <button class="btn btn-lg btn-primary btn-block" type="submit" formmethod="post">{% translate "Submit" %}</button>
+            </form>
+        </div>
+        {% if form.post_text %}
+        <div class="row form-post-text">
+            <div class="small text-muted margin-top-xs">
+                {{form.post_text|linebreaks}}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

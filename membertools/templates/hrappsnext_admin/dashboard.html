@@ -1,0 +1,20 @@
+{% extends "membertools_admin/base.html" %}
+{% load bootstrap %}
+{% load static %}
+{% load i18n %}
+
+{% block inside_content %}
+{% if recruiter_forms %}
+<div class="panel panel-primary">
+    <div class="panel-heading"><b>{% translate "Your Active Applications" %}</b></div>
+    {% if user_review_applications %}
+    {% include "membertools_admin/partials/appqueue_admin.html" with applications=user_review_applications %}
+    {% else %}
+    <div class="panel-body">
+        <p>You don't have any active/pending applications.</p>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+<p class="lead">Make suggestions content that could go here.</p>
+{% endblock inside_content %}

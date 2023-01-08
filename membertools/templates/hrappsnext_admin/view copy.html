@@ -1,0 +1,246 @@
+{% extends "allianceauth/base.html" %}
+
+{% load static %}
+{% load bootstrap %}
+{% load i18n %}
+{% load discourse_username %}
+
+{% block page_title %}{% translate "View Application" %}{% endblock page_title %}
+{% block extra_css %}{% endblock extra_css %}
+
+{% block content %}
+    <div class="col-lg-12">
+        <h1 class="page-header text-center">{% translate "View Application" %}: {{ app.form.corp }}{% if app.form.title %} - {{app.form.title}}{% endif %}</h1>
+        <div class="container-fluid">
+            <div class="col-md-6 col-md-offset-3">
+                <div class="row">
+                    {% if app.approved %}
+                        <div class="alert alert-success text-center">{% translate "Approved" %}:  {{ app.reviewer_str }}</div>
+                    {% elif app.approved == False %}
+                        <div class="alert alert-danger text-center">{% translate "Denied" %}:  {{ app.reviewer_str }}</div>
+                    {% else %}
+                        <div class="alert alert-warning text-center">{% translate "Pending" %}</div>
+                    {% endif %}
+                    {% if app.reviewer_str %}
+                        <div class="alert alert-info text-center">{% translate "Reviewer" %}: {{ app.reviewer_str }}</div>
+                    {% endif %}
+                </div>
+                <div class="row">
+                    <div class="panel panel-info">
+                        <div class="panel-heading">{% translate "Applicant" %}</div>
+                        <table class="table">
+                            <tr>
+                                <th class="text-center">{% translate "User" %}</th>
+                                <th class="text-center">{% translate "Main Character" %}</th>
+                                <th class="text-center">{% translate "Applying Character" %}</th>
+                            </tr>
+                            <tr>
+                                <td class="text-center">{{ app.user }}</td>
+                                <td class="text-center">{{ app.main_character }}</td>
+                                <td class="text-center">{{ app.character.character_name }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    {% if buttons and perms.auth.human_resources %}
+                    <div class="panel panel-info clearfix">
+                        <div class="panel-heading">{% translate "Checks" %}</div>
+                        <div class="">
+                            <table class="table">
+                                <tr>
+                                    <th class="text-center col-md-3">{% translate "Name" %}</th>
+                                    <th class="text-center col-md-1">{% translate "Status" %}</th>
+                                    <th class="text-center">{% translate "Reason" %}</th>
+                                </tr>
+                                {% for key,check in checks.items %}
+                                {% if check.status == 0 %}
+                                    {% if check.messages|length == 1%}
+                                <tr class="danger">
+                                    {% else %}
+                                <tr class="active">
+                                    {% endif %}
+                                {% else %}
+                                <tr>
+                                {% endif %}
+                                    <td class="text-center">{{check.title}}</td>
+                                    <td class="text-center">
+                                    {% if check.status == -1 %}
+                                        <i class="far fa-question-circle text-warning"></i>
+                                    {% elif check.status == 0 %}
+                                        <i class="fas fa-times text-danger"></i>
+                                    {% elif check.status == 1 %}
+                                        <i class="fas fa-check text-success"></i>
+                                    {% endif %}
+                                    </td>
+                                    <td class="text-center">{{check.reason}}</td>
+                                </tr>
+                                {% if not check.status and check.messages|length > 1 %}
+                                    {% for message in check.messages %}
+                                <tr class="{% if message.status %}success{% else %}danger{% endif %}">
+                                    <td class="text-center">-</td>
+                                    <td class="text-center">
+                                        {% if message.status == -1 %}
+                                        <i class="far fa-question-circle text-warning"></i>
+                                        {% elif message.status == 0 %}
+                                        <i class="fas fa-times text-danger"></i>
+                                        {% elif message.status == 1 %}
+                                        <i class="fas fa-check text-success"></i>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">{{message.message}}</td>
+                                </tr>
+                                    {% endfor %}
+                                {% endif %}
+                                {% endfor %}
+                            </table>
+                        </div>
+                    </div>
+                    <div id="links-panel" class="panel panel-info">
+                        <div class="panel-heading">{% translate "Links" %}</div>
+                        <table class="table">
+                            <tr>
+                                <th class="text-left" colspan="5"><b>General</b></th>
+                            </tr>
+                            <tr>
+                                <td class="text-center"><a class="btn btn-primary" target="_blank" href="https://zkillboard.com/character/{{ app.character.character_id }}/">Zkill</a></td>
+                                <td class="text-center"><a class="btn btn-primary" target="_blank" href="https://evewho.com/character/{{ app.character.character_id }}/">Evewho</a></td>
+                                <td class="text-center"><a class="btn btn-primary" target="_blank" href="https://forums.eveonline.com/u/{{ app.character.character_name|discourse_username|urlencode }}/summary">EVE Online Forums</a></td>
+                                <td class="text-center"><a class="btn btn-primary" target="_blank" href="https://eve-search.com/search/author/{{ app.character.character_name|urlencode }}">EVE-Search</a></td>
+                                <td class="text-center"><a class="btn btn-primary" target="_blank" href="https://www.google.com/search?q=%22{{ app.character.character_name|urlencode }}%22%20%22EVE%20Online%22">Google Search</a></td>
+                            </tr>
+                        </table>
+                        <table class="table">
+                            <tr>
+                                <th class="text-left" colspan="3"><b>EVE University</b></th>
+                            </tr>    
+                            <tr>
+                                <td class="text-center"><a class="btn btn-primary" target="_blank" href="https://forum.eveuniversity.org/search.php?keywords={{ app.character.character_name|urlencode }}&terms=all&author=&fid[]=140&sc=1&sf=all&sr=posts&sk=t&sd=d&st=0&ch=300&t=0&submit=Search">Member Records</a></td>
+                                {% if memberaudit %}
+                                <td class="text-center"><a class="btn btn-primary" target="_blank" href="{% url 'memberaudit:character_viewer' memberaudit_character.pk %}">Member Audit</a></td>
+                                {% else %}
+                                <td class="text-center"><button class="btn btn-primary btn-disabled" disabled="disabled">Member Audit</button></td>
+                                {% endif %}
+                                <td class="text-center"><a class="btn btn-primary" target="_blank" href="https://forum.eveuniversity.org/search.php?keywords=&terms=all&author={{ app.character.character_name|urlencode }}&sc=1&sf=all&sr=posts&sk=t&sd=d&st=0&ch=300&t=0&submit=Search">EVE Uni Forums</a></td>
+                            </tr>
+                        
+                        </table>
+                    </div>
+                    {% endif %}
+                    <div class="panel panel-info">
+                        <div class="panel-heading">{% translate "Characters" %}</div>
+                        <table class="table">
+                            <tr>
+                                <th class="text-center"></th>
+                                <th class="text-center">{% translate "Name" %}</th>
+                                <th class="text-center">{% translate "Corp" %}</th>
+                                <th class="text-center">{% translate "Alliance" %}</th>
+                            </tr>
+                            {% for char in app.characters %}
+                                <tr>
+                                    <td class="text-center">
+                                        <img class="ra-avatar img-responsive img-circle" src="{{ char.portrait_url_32 }}">
+                                    </td>
+                                    <td class="text-center">{{ char.character_name }}</td>
+                                    <td class="text-center">{{ char.corporation_name }}</td>
+                                    <td class="text-center">{{ char.alliance_name }}</td>
+                                </tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                </div>
+                <div class="row">
+                    {% for response in responses %}
+                        <div class="panel panel-default">
+                            <div class="panel-heading">{{ response.question.title }}</div>
+                            <div class="alert">{{ response.answer|linebreaksbr }}</div>
+                        </div>
+                    {% endfor %}
+                </div>
+                {% if buttons %}
+                    {% if perms.auth.human_resources %}
+                        <div class="row">
+                            <div class="panel panel-primary">
+                                <div class="panel-heading">{% translate "Actions" %}</div>
+                                <div class="panel-body text-center">
+                                    {% if app.approved == None %}
+                                        {% if app.reviewer == user or app.reviewer and can_manage %}
+                                            {% if perms.membertools.approve_application %}
+                                                <a href="{% url 'membertools:approve' app.id %}" class="btn btn-success">{% translate "Approve" %}</a>
+                                            {% endif %}
+                                            {% if perms.membertools.review_application %}
+                                                <a href="{% url 'membertools:review' app.id %}"
+                                                    class="btn btn-info">{% trans "Review" %}</a>
+                                                <a href="{% url 'membertools:pending' app.id %}"
+                                                   class="btn btn-warning">{% trans "Pending" %}</a>
+                                            {% endif %}
+                                            {% if perms.membertools.reject_application %}
+                                                <a href="{% url 'membertools:reject' app.id %}" class="btn btn-danger">{% translate "Reject" %}</a>
+                                            {% endif %}
+                                            {% if perms.membertools.delete_application %}
+                                                <a href="{% url 'membertools:remove' app.id %}" class="btn btn-danger">{% translate "Delete" %}</a>
+                                            {% endif %}
+                                        {% elif not app.reviewer %}
+                                            <a href="{% url 'membertools:mark_in_progress' app.id %}" class="btn btn-warning">{% translate "Mark in Progress" %}</a>
+                                        {% endif %}
+                                    {% endif %}
+                                    {% if perms.membertools.add_applicationcomment %}
+                                        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#myModal">{% translate "Comment" %}</button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true">
+                            <div class="panel panel-default">
+                                <div class="panel-heading" role="tab" id="headingThree">
+                                    <h4 class="panel-title">
+                                        <a class="collapsed" data-toggle="collapse" data-parent="#accordion" href="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                                            {% translate 'Comments' %} ({{ comments.count }})
+                                        </a>
+                                    </h4>
+                                </div>
+                                <div id="collapseThree" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingThree">
+                                    <div class="panel-body">
+                                        {% for comment in comments %}
+                                            <div class="panel panel-default">
+                                                <div class="panel-heading" role="tab" id="">
+                                                    <div class="panel-title">
+                                                        <div class="pull-right">{{ comment.created }}</div>
+                                                        <div class="pull-left">{% if comment.poster.profile.main_character %}{{ comment.poster.profile.main_character }}{% else %}{{ comment.poster }}{% endif %}</div>
+                                                        <div class="clearfix"></div>
+                                                    </div>
+                                                </div>
+                                                <div class="panel-body">{{ comment.text|linebreaks }}</div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% if perms.membertools.add_applicationcomment %}
+        <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal">
+                            <span aria-hidden="true">&times;</span><span class="sr-only">{% translate "Close" %}</span>
+                        </button>
+                        <h4 class="modal-title" id="myModalLabel">{% translate "Add Comment" %}</h4>
+                    </div>
+                    <div class="modal-body">
+                        <form class="form-signin" role="form" action="" method="POST">
+                            {% csrf_token %}
+                            {{ comment_form|bootstrap }}
+                            <br/>
+                            <button class="btn btn-lg btn-primary btn-block" type="submit">{% translate "Add Comment" %}</button>
+                        </form>
+                    </div>
+                    <div class="modal-footer"></div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}

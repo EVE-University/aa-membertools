@@ -1,0 +1,39 @@
+{% comment %}
+{% endcomment %}
+{% load i18n %}
+<table id="characters-table" class="table">
+    <tr>
+        <th class="text-center hidden-xs hidden-sm"></th>
+        <th class="text-center">{% translate "Name" %}</th>
+        <th class="text-center">{% translate "Corp" %}</th>
+        <th class="text-center">{% translate "Alliance" %}</th>
+        <th class="text-center">{% translate "Main Character" %}</th>
+        <th class="text-center">{% translate "Actions" %}</th>
+    </tr>
+    {% for char in characters %}
+    <tr>
+        <td class="text-center hidden-xs hidden-sm">
+            <img class="ra-avatar img-responsive img-circle" src="{{ char.portrait_url_32 }}">
+        </td>
+        <td class="text-center">{{ char.character.character_name }}{% if details.main_character == char.character %} <span class="label label-primary">Main</span>{% endif %}</td>
+        <td class="text-center">{{ char.character.corporation_name }}</td>
+        <td class="text-center">{{ char.character.alliance_name }}</td>
+        <td class="text-center">{{ char.main_character }}</td>
+        <td class="text-center">
+        {% if details.character == char %}
+            <a href="" class="btn btn-primary disabled" disabled="">
+                <span class="glyphicon glyphicon-eye-close"></span>
+            </a>
+        {% else %}
+        <a href="{% url 'membertools_admin:char_detail_view' char.id %}" class="btn btn-primary">
+            <span class="glyphicon glyphicon-eye-open"></span>
+        </a>
+        {% endif %}
+        </td>
+    </tr>
+    {% empty %}
+    <tr class="danger">
+        <td colspan="6" class="text-center">No characters found.</td>
+    </tr>
+    {% endfor %}
+</table>

@@ -1,0 +1,41 @@
+{% comment %}
+{% endcomment %}
+{% load comment_actions %}
+{% for comment in comments %}
+<div class="comment-row">
+    <div class="comment-avatar">
+        <img class="ra-avatar img-responsive img-circle" src="{{ comment.poster.profile.main_character.portrait_url_64 }}" width="45" height="45">
+    </div>
+    <div class="comment-body">
+    {% if comment == edit_comment %}
+        <form class="form-signin" role="form" method="POST" action="{{ base_url }}/comment/{{ comment.id }}/edit">
+            {% csrf_token %}
+            {% include "membertools_admin/partials/comment_form_admin.html" %}
+        </form>
+    {% else %}
+        <div class="comment-meta">
+            <span class="comment-poster">{{ comment.poster_character }}</span>
+            <span class="comment-date" title="{{ comment.created|date:'DATETIME_FORMAT' }}">{{ comment.created|date:"M j, Y" }}</span>
+        </div>
+        <div class="content">
+            {{ comment.text|urlize|linebreaks }}
+        </div>
+        <div class="comment-menu-area">
+            <ul class="comment-breadcrumb">
+            {% if comment.member %}
+                <li title="Member">{{ comment.member }}</li>
+            {% endif %}
+                <li title="Character"><a href="{% url 'membertools_admin:char_detail_view' comment.character.id %}">{{ comment.character }}</a></li>
+            {% if comment.application %}
+                <li title="Application"><a href="{% url 'membertools_admin:view' comment.application.id %}">{{ comment.application }}</a></span></li>
+            {% endif %}
+            </ul>
+            <div class="comment-actions">
+            {% comment_actions comment %}
+            </div>    
+        </div>
+    {% endif %}
+    </div> <!-- comment-body -->
+    
+</div>
+{% endfor %}

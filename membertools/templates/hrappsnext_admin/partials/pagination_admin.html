@@ -1,0 +1,27 @@
+{% comment %}
+{% endcomment %}
+{% load i18n %}
+<div class="col-xs-6 text-left" style="margin-top: -25px;">
+    <span class="pagination">{% blocktrans count rc=paginator.count %}Found {{ rc }} record{% plural %}Found {{ rc }} records{% endblocktrans %}</span>
+</div>
+<div class="col-xs-6 text-right" style="margin-top: -25px;">
+    <div class="pagination">
+        <span class="step-links">
+            {% with search_str=request.GET.search %}
+                {% if page_obj.has_previous %}
+            <a href="?{% if search_str %}search={{ search_str }}&{% endif %}page=1">&laquo; {% translate "First" %}</a>
+            <a href="?{% if search_str %}search={{ search_str }}&{% endif %}page={{ page_obj.previous_page_number }}">{% translate "Previous" %}</a>
+                {% endif %}
+
+            <span class="current">
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+            </span>
+
+                {% if page_obj.has_next %}
+            <a href="?{% if search_str %}search={{ search_str }}&{% endif %}page={{ page_obj.next_page_number }}">{% translate "Next" %}</a>
+            <a href="?{% if search_str %}search={{ search_str }}&{% endif %}page={{ page_obj.paginator.num_pages }}">{% translate "Last" %} &raquo;</a>
+                {% endif %}
+            {% endwith %}
+        </span>
+    </div>
+</div>

@@ -1,0 +1,87 @@
+{% comment %}
+{% endcomment %}
+{% load i18n %}
+{% load humanize %}
+<div class="details-flex">
+    <div class="details-portrait hidden-xs">
+        <img class="img-rounded" src="{{ char_detail.character.portrait_url_256 }}" width="256" height="256">
+    </div>
+    <div class="details-info">
+        <div class="row">
+            <div class="col-lg-6">
+                <dl class="dl-horizontal">
+                    <dt>Character:</dt>
+                    <dd class="nowrap">{{ char_detail.character }}</dd>
+                    <dt>Corporation:</dt>
+                    <dd>{{ char_detail.character.corporation_name }}
+                    <dt>Alliance:</dt>
+                    <dd>{{ char_detail.character.alliance_name }}
+                    <dt>Faction:</dt>
+                    <dd>{{ char_detail.character.faction_name }}
+                    <dt>Born:</dt>
+                    <dd title="{{ char_detail.birthday }}">{{ char_detail.birthday|naturaltime }}</dd>
+                    <dt>Security Status:</dt>
+                    <dd>{{ char_detail.security_status|floatformat:2 }}
+                    <dt>Vanity Title:</dt>
+                    <dd>{{ char_detail.title }}
+                    <dt>Applied Title:</dt>
+                    <dd>{{ char_detail.applied_title }}</dd>
+                </dl>
+            </div>
+            <div class="col-lg-6">
+                <dl class="dl-horizontal">
+                    <dt>Total SP:</dt>
+                    <dd title="{{ char_detail.skillpoints_total|intcomma }}">
+                        {% if char_detail.skillpoints_total %}
+                        {{ char_detail.skillpoints_total|intword|intcomma }}
+                        {% else %}
+                        -
+                        {% endif %}
+                    </dd>
+                    <dt>Unallocated SP:</dt>
+                    <dd title="{{ char_detail.skillpoints_unallocated|intcomma }}">
+                        {% if char_detail.skillpoints_unallocated %}
+                        {{ char_detail.skillpoints_unallocated|intword|intcomma }}
+                        {% else %}
+                        -
+                        {% endif %}
+                    </dd>
+                    <dt>Total ISK:</dt>
+                    <dd title="{{ char_detail.wallet_balance|intcomma }}">
+                        {% if char_detail.wallet_balance %}
+                        {{ char_detail.wallet_balance|intword|intcomma }}
+                        {% else %}
+                        -
+                        {% endif %}
+                    </dd>
+                    <dt>Last Login:</dt>
+                    <dd title="{{ char_detail.online_last_login }}">
+                        {% if char_detail.online_last_login %}
+                        {{ char_detail.online_last_login|naturaltime }}
+                        {% else %}
+                        -
+                        {% endif %}
+                    </dd>
+                    <dt>Location:</dt>
+                    <dd title="{{ char_detail.location }}">
+                        {% if char_detail.location %}
+                        {{ char_detail.location }}
+                        {% else %}
+                        -
+                        {% endif %}
+                    </dd>
+                </dl>
+            </div>        
+        </div>
+    </div>
+    <div class="details-history">
+        <h4>Corp History:</h4>
+        {% include "membertools/partials/corp_history_list.html" %}
+    </div>
+    {% if char_detail.description %}
+    <div class="details-bio">
+        <h4>Bio:</h4>
+        <blockquote class="details-bio-content">{{ char_detail.description_text|linebreaks }}</blockquote>
+    </div>
+    {% endif %}
+</div>

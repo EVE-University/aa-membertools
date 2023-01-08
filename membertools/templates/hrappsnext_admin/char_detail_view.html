@@ -1,0 +1,77 @@
+{% extends "membertools_admin/base.html" %}
+
+{% load static %}
+{% load bootstrap %}
+{% load i18n %}
+{% load humanize %}
+
+{% block inside_content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="panel panel-primary clearfix">
+            <div class="panel-heading">{% translate "Character Details" %}</div>
+            <div class="panel-body">
+            {% include "membertools_admin/partials/characterdetail_admin.html" %}
+            </div>
+        </div>
+    </div>
+    {% if char_detail.member %}
+    <div class="row">
+        <div class="panel panel-primary clearfix">
+            <div class="panel-heading">{% translate "Member Details" %}</div>
+            <div class="panel-body">
+            {% include "membertools_admin/partials/memberdetail_admin.html" with member=char_detail.member %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    <div class="row">
+        <div class="panel panel-primary clearfix">
+            <div class="panel-heading">{% translate "Required Steps" %}</div>
+            {% include "membertools_admin/partials/checks_admin.html" %}
+        </div>
+    </div>
+    <div class="row">
+        <div class="panel panel-primary">
+            <div class="panel-heading">{% translate "Characters" %}</div>
+            <div class="panel-body">
+            {% include "membertools_admin/partials/characters_admin.html" with current_character=char_detail.character main_character=char_detail.main_character %}
+            </div>
+        </div>
+    </div>
+    {% if perms.membertools.application_admin_access %}
+    <div class="row">
+        <div class="panel panel-primary">
+            <div class="panel-heading">{% translate "Applications" %}</div>
+            <div class="panel-body">
+            {% include "membertools_admin/partials/applist_admin.html" with applications=char_detail.applications %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {% if comments and perms.membertools.view_comment %}
+    <div class="row">
+        <div class="panel panel-primary">
+            <div class="panel-heading">{% translate "Comments" %}</div>
+            <div class="panel-body">
+            {% include "membertools_admin/partials/comments_admin.html" %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {% if perms.membertools.add_comment and not edit_comment %}
+    <div class="row panel panel-primary add-comment-panel">
+        <div class="panel-heading">{% translate "Add Comment" %}</div>
+        <div class="panel-body">
+            <form class="form-signin" role="form" method="POST" action="{% url 'membertools_admin:char_detail_comment_create' char_detail.id %}">
+                {% csrf_token %}
+                {% include "membertools_admin/partials/comment_form_admin.html" %}
+            </form>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+{% block search_box %}
+{% include "membertools_admin/partials/search_form_admin.html" %}
+{% endblock %}

@@ -1,0 +1,38 @@
+{% comment %}
+    Params:
+    member: Memberdetail
+
+{% endcomment %}
+{% load i18n %}
+{% load humanize %}
+<div class="details-flex">
+    <div class="details-portrait hidden-xs">
+        <img class="img-rounded" src="{{ member.main_character.portrait_url_128 }}" width="128" height="128">
+    </div>
+    <div class="details-info">
+        <div class="row">
+            <div class="col-lg-6">
+                <dl class="dl-horizontal">
+                    <dt>Main Character:</dt>
+                    <dd class="nowrap">{{ member.main_character }}</dd>
+                    <dt>Awarded Title:</dt>
+                    <dd>{{ member.awarded_title }}</dd>
+                    <dt>First Joined:</dt>
+                    <dd class="nowrap">{{ member.first_joined|naturaltime }}</dd>
+                    <dt>Last Joined:</dt>
+                    <dd class="nowrap">{{ member.last_joined|naturaltime }}</dd>
+                </dl>
+            </div>
+            <div class="col-lg-6">
+                <dl class="dl-horizontal">
+                    <dt>Current Corp:</dt>
+                    <dd>{{ member.main_character.corporation_name }}
+                    <dt>Current Alliance:</dt>
+                    <dd>{{ member.main_character.alliance_name }}
+                    <dt>Current Faction:</dt>
+                    <dd>{{ member.main_character.faction_name }}
+                </dl>
+            </div>        
+        </div>
+    </div>
+</div>

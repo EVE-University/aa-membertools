@@ -1,0 +1,41 @@
+{% extends "membertools/base.html" %}
+
+{% load static %}
+{% load bootstrap %}
+{% load i18n %}
+
+{% block inside_content %}
+{% if current_apps %}
+<div class="panel panel-default">
+    <div class="panel-heading">{% translate "Recent Applications" %}</div>
+    <div class="panel-body">
+    {% include "membertools/partials/applist_app.html" with applications=current_apps %}
+    </div>
+</div>
+{% endif %}
+<div class="panel panel-default">
+    <div class="panel-heading">{% translate "Available Application Forms" %}</div>
+    <table class="table table-condensed">
+        <tr>
+            <th class="text-center">{% translate "Form" %}
+            <th class="text-center">{% translate "Description" %}</th>
+            <th class="text-center">{% translate "Actions" %}</th>
+        </tr>
+        {% for form in available_forms %}
+            <tr>
+                <td class="text-center col-md-3">{{ form }}</td>
+                <td class="text-center">Description here</td>
+                <td class="text-center">
+                    <a href="{% url 'membertools:create' form.id %}" class="btn btn-success">
+                        Apply
+                    </a>
+                </td>
+            </tr>
+        {% empty %}
+            <tr class="warning">
+                <td colspan="3" class="text-center">No application forms are currently available for you at this time.</td>
+            </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

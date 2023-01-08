@@ -1,0 +1,27 @@
+{% load discourse_username %}
+<table class="table">
+    <tr>
+        <th class="text-left" colspan="5"><b>General</b></th>
+    </tr>
+    <tr>
+        <td class="text-center"><a class="btn btn-primary" target="_blank" href="https://zkillboard.com/character/{{ character.character_id }}/">Zkill</a></td>
+        <td class="text-center"><a class="btn btn-primary" target="_blank" href="https://evewho.com/character/{{ character.character_id }}/">Evewho</a></td>
+        <td class="text-center"><a class="btn btn-primary" target="_blank" href="https://forums.eveonline.com/u/{{ character.character_name|discourse_username|urlencode }}/summary">EVE Online Forums</a></td>
+        <td class="text-center"><a class="btn btn-primary" target="_blank" href="https://eve-search.com/search/author/{{ character.character_name|urlencode }}">EVE-Search</a></td>
+        <td class="text-center"><a class="btn btn-primary" target="_blank" href="https://www.google.com/search?q=%22{{ character.character_name|urlencode }}%22%20%22EVE%20Online%22">Google Search</a></td>
+    </tr>
+</table>
+<table class="table">
+    <tr>
+        <th class="text-left" colspan="3"><b>EVE University</b></th>
+    </tr>    
+    <tr>
+        <td class="text-center"><a class="btn btn-primary" target="_blank" href="https://forum.eveuniversity.org/search.php?keywords={{ character.character_name|urlencode }}&terms=all&author=&fid[]=140&sc=1&sf=all&sr=posts&sk=t&sd=d&st=0&ch=300&t=0&submit=Search">Member Records</a></td>
+        {% if memberaudit and memberaudit_character %}
+        <td class="text-center"><a class="btn btn-primary" target="_blank" href="{% url 'memberaudit:character_viewer' memberaudit_character.pk %}">Member Audit</a></td>
+        {% else %}
+        <td class="text-center"><button class="btn btn-primary btn-disabled" disabled="disabled">Member Audit {{memberaudit_character}}</button></td>
+        {% endif %}
+        <td class="text-center"><a class="btn btn-primary" target="_blank" href="https://forum.eveuniversity.org/search.php?keywords=&terms=all&author={{ character.character_name|urlencode }}&sc=1&sf=all&sr=posts&sk=t&sd=d&st=0&ch=300&t=0&submit=Search">EVE Uni Forums</a></td>
+    </tr>
+</table>

@@ -1,0 +1,175 @@
+.search-container {
+    margin: 20px 0 10px;
+    text-align: right;
+}
+
+.details-flex {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.details-portrait {
+    margin: 0 2rem 2rem 0;
+}
+
+.details-info {
+    flex-grow: 1;
+    width: 70%;
+}
+
+.details-bio {
+    width: 100%;
+}
+
+.details-bio-content {
+    font-size: 14px;
+}
+
+.details-history {
+    width: 100%;
+}
+
+.dl-horizontal dt {
+    text-align: left;
+    width: 12rem;
+}
+
+.dl-horizontal dd {
+    margin-left: 12rem;
+}
+
+@media (max-width: 767px) {
+    .dl-horizontal dd {
+        margin: 0 0 2rem;
+    }
+}
+
+.app-responses dt {
+    font-size: 1.25em;
+    margin: 4rem 0 1rem;
+}
+
+.app-responses dt:first-child {
+    margin-top: 0;
+}
+
+.app-responses dt::after {
+    content: " ";
+    display: block;
+    height: 1px;
+    width: 100%;
+    background-color: #eee;
+    margin-top: 0.5rem;
+    /* Fix aliasing at non-100% UI scales */
+    transform: translate(-1px, -1px);
+}
+
+.page-header, .page-content {
+    max-width: 120rem;
+}
+
+.comment-row {
+    display: flex;
+}
+
+.comment-avatar, .comment-body {
+    border-top: 1px solid #eee;
+    margin-bottom: 10px;
+    position: relative;
+}
+
+.comment-avatar {
+    flex: 0 0 auto;
+    padding-top: 15px;
+    width: 60px;
+    z-index: 2;
+}
+
+.comment-body::before {
+    content: " ";
+    flex: 0 0 auto;
+    background: #9977ff;
+    width: 10px;
+}
+
+.comment-body {
+    flex: 1 1 auto;
+    padding: 12px 5px 5px;
+}
+
+.comment-row:first-child .comment-avatar, .comment-row:first-child .comment-body {
+    border-top: none;
+    padding-top: 0;
+}
+
+.comment-meta {
+    display: flex;
+}
+
+.comment-meta .comment-poster {
+    flex: 1 1 auto;
+    font-size: 1.2em;
+    font-weight: 700;
+    margin-right: auto;
+}
+
+.comment-meta .comment-date {
+    flex: 0 0 auto;
+}
+
+.comment-body .content {
+    padding: 1em 11px 11px 0;
+}
+
+.comment-menu-area {
+    display: flex;
+}
+
+.comment-breadcrumb {
+    flex: 1 0 auto;
+    list-style: none;
+    padding: 5px;
+}
+
+.comment-breadcrumb > li {
+    display: inline-block;
+}
+
+.comment-breadcrumb > li + li:before {
+    color: #7a8288;
+    content: "\00bb\00a0";
+    padding: 0 5px;
+}
+
+.comment-actions {
+    flex: 0 0 auto;
+}
+
+.comment-form-area {
+}
+
+.comment-form-area form textarea {
+    min-height: 50px;
+    resize: vertical;
+}
+
+.comment-form-area .comment-buttons {
+    text-align: right;
+}
+
+.add-comment-panel .close {
+    color: #fff;
+    display: none;
+    font-size: 2.5rem;
+    line-height: 0.6;
+}
+
+.add-comment-panel.active {
+    bottom: 0;
+    box-shadow: 0 0 14px rgba(11,11,11,0.8);
+    position: sticky;
+}
+
+.add-comment-panel.active .close {
+    display: inline;
+}
