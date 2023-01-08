@@ -1,0 +1,23 @@
+{% extends "allianceauth/base.html" %}
+
+{% load static %}
+
+{% block page_title %}{{ page_title|striptags }} - {{ app_title }}{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'membertools/css/hrn-base.css' %}" type="text/css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+    <div class="aa-membertools">
+        <br />
+        {% include "membertools/partials/menu_app.html" %}
+        <div class="page-header">
+            <h3 class="text-left">{{ page_title }}</h3>
+            <p>{{ sub_title }}</p>
+        </div>
+        <div id="aa-membertools-content" class="page-content">
+        {% block inside_content %}{% endblock %}
+        </div>
+    </div>
+{% endblock %}

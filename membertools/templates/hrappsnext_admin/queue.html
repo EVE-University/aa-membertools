@@ -1,0 +1,35 @@
+{% extends "membertools_admin/base.html" %}
+{% load bootstrap %}
+{% load static %}
+{% load i18n %}
+
+{% block inside_content %}
+{% if user_review_applications %}
+<div class="panel panel-warning">
+    <div class="panel-heading"><b>{% translate "Your Active Applications" %}</b></div>
+    {% include "membertools_admin/partials/appqueue_admin.html" with applications=user_review_applications %}
+</div>
+{%  endif %}
+<ul class="nav nav-tabs">
+    <li class="active"><a data-toggle="tab" href="#new">{% trans "New" %}{% if new_applications.count %} <span class="badge">{{ new_applications.count }}{% endif %}</a></li>
+    <li><a data-toggle="tab" href="#pending">{% trans "Pending" %}{% if pending_applications.count %} <span class="badge">{{ pending_applications.count }}{% endif %}</a></li>
+    <li><a data-toggle="tab" href="#review">{% trans "Under Review" %}{% if review_applications.count %} <span class="badge">{{ review_applications.count }}{% endif %}</a></li>
+</ul>
+<div class="tab-content">
+    <div id="new" class="tab-pane fade in active panel panel-default">
+        <div class="panel-body">
+        {% include "membertools_admin/partials/appqueue_admin.html" with applications=new_applications%}
+        </div>
+    </div>
+    <div id="pending" class="tab-pane fade panel panel-default">
+        <div class="panel-body">
+        {% include "membertools_admin/partials/appqueue_admin.html" with applications=pending_applications%}
+        </div>
+    </div>
+    <div id="review" class="tab-pane fade panel panel-default">
+        <div class="panel-body">
+        {% include "membertools_admin/partials/appqueue_admin.html" with applications=review_applications%}
+        </div>
+    </div>
+</div>
+{% endblock inside_content %}

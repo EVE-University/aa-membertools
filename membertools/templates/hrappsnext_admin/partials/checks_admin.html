@@ -1,0 +1,48 @@
+{% load i18n %}
+<table class="table">
+    <tr>
+        <th class="text-center col-md-3">{% translate "Name" %}</th>
+        <th class="text-center col-md-1">{% translate "Status" %}</th>
+        <th class="text-center">{% translate "Reason" %}</th>
+    </tr>
+    {% for key,check in checks.items %}
+    {% if check.status == 0 %}
+        {% if check.messages|length == 1%}
+    <tr class="danger">
+        {% else %}
+    <tr class="active">
+        {% endif %}
+    {% else %}
+    <tr>
+    {% endif %}
+        <td class="text-center">{{check.title}}</td>
+        <td class="text-center">
+        {% if check.status == -1 %}
+            <i class="far fa-question-circle text-warning"></i>
+        {% elif check.status == 0 %}
+            <i class="fas fa-times text-danger"></i>
+        {% elif check.status == 1 %}
+            <i class="fas fa-check text-success"></i>
+        {% endif %}
+        </td>
+        <td class="text-center">{{check.reason}}</td>
+    </tr>
+    {% if not check.status and check.messages|length > 1 %}
+        {% for message in check.messages %}
+    <tr class="{% if message.status %}success{% else %}danger{% endif %}">
+        <td class="text-center">-</td>
+        <td class="text-center">
+            {% if message.status == -1 %}
+            <i class="far fa-question-circle text-warning"></i>
+            {% elif message.status == 0 %}
+            <i class="fas fa-times text-danger"></i>
+            {% elif message.status == 1 %}
+            <i class="fas fa-check text-success"></i>
+            {% endif %}
+        </td>
+        <td class="text-center">{{message.message}}</td>
+    </tr>
+        {% endfor %}
+    {% endif %}
+    {% endfor %}
+</table>

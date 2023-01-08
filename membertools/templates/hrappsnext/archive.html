@@ -1,0 +1,14 @@
+{% extends "membertools/base.html" %}
+
+{% load static %}
+{% load bootstrap %}
+{% load i18n %}
+
+{% block inside_content %}
+<div id="membertools-app-archive" class="panel panel-default">
+    <div class="panel-heading">Older than {{ application_delta_human }}</div>
+    <div class="panel-body">
+    {% include "membertools/partials/applist_app.html" %}
+    </div>
+</div>
+{% endblock %}

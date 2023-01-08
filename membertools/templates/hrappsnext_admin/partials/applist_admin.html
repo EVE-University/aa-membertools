@@ -1,0 +1,41 @@
+{% comment %}
+{% endcomment %}
+{% load i18n %}
+<table class="table">
+    <tr>
+        <th class="text-center hidden-xs hidden-sm hidden-md">{% translate "Submitted" %}</th>
+        <th class="text-center">{% translate "Closed" %}</th>
+        <th class="text-center">{% translate "Character" %}</th>
+        <th class="text-center">{% translate "Form" %}</th>
+        <th class="text-center hidden-xs hidden-sm hidden-md">{% translate "Main Character" %}</th>
+        <th class="text-center hidden-xs hidden-sm hidden-md">{% translate "Reviewer" %}</th>
+        <th class="text-center">{% translate "Status" %}</th>
+        {% if perms.membertools.view_application %}
+        <th class="text-center">{% translate "Actions" %}</th>
+        {% endif %}
+    </tr>
+    {% for app in applications %}
+        <tr>
+            <td class="text-center hidden-xs hidden-sm hidden-md">{{ app.created }}</td>
+            <td class="text-center">{{ app.closed }}</td>
+            <td class="text-center">{{ app.character.character_name }}</td>
+            <td class="text-center">{{ app.form }}</td>
+            <td class="text-center hidden-xs hidden-sm hidden-md">{{ app.main_character }}</td>
+            <td class="text-center hidden-xs hidden-sm hidden-md">{% if app.reviewer %}{{ app.reviewer.profile.main_character }}{% else %}-{% endif %}</td>
+            <td class="text-center">
+            {% include "membertools_admin/partials/app_status_admin.html" with application=app %}
+            </td>
+            {% if perms.membertools.view_application %}
+            <td class="text-center">
+                <a href="{% url 'membertools_admin:view' app.id %}" class="btn btn-primary">
+                    <span class="glyphicon glyphicon-eye-open"></span>
+                </a>
+            </td>
+            {% endif %}
+        </tr>
+    {% empty %}
+        <tr class="warning">
+            <td colspan="8" class="text-center">Nothing to see here. &#x1f610;</td>
+        </tr>
+    {% endfor %}
+</table>

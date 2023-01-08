@@ -1,0 +1,23 @@
+{% load i18n %}
+<table class="table table-striped">
+    <tr>
+        <th class="text-center">{% translate "Corporation" %}</th>
+        <th class="text-center">{% translate "Alliance" %}</th>
+        <th class="text-center">{% translate "Start" %}</th>
+        <th class="text-center">{% translate "End" %}</th>
+        <th class="text-center">{% translate "Duration" %}</th>
+    </tr>
+    {% for row in corp_history %}
+        <tr>
+            <td class="text-center">{{ row.corporation }}{% if row.is_deleted %} ({% translate "Closed" %}){% endif %}</td>
+            <td class="text-center">{{ row.corporation.alliance }}</td>
+            <td class="text-center">{{ row.start_date }}</td>
+            <td class="text-center">{% if row.end_date %}{{ row.end_date }}{% else %}-{% endif %}</td>
+            <td class="text-center">{% if row.end_date %}{{ row.end_date|timeuntil:row.start_date }}{% else %}{{ row.start_date|timesince }}{% endif %}</td>
+        </tr>
+    {% empty %}
+        <tr class="warning">
+            <td colspan="5" class="text-center">Must be an alien. There is no corporation history.</td>
+        </tr>
+    {% endfor %}
+</table>

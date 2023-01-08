@@ -1,0 +1,15 @@
+{% comment %}
+{% endcomment %}
+{% load i18n %}
+{% load bootstrap %}
+<div class="comment-form-area">
+    {{ comment_form|bootstrap }}
+    <div class="comment-buttons">
+        {% if edit_comment %}
+        <button class="btn btn-warning">{% translate "Update Comment" %}</button>
+        <a href="{{ base_url }}" class="btn btn-primary">{% translate "Cancel" %}</a>
+        {% else %}
+        <button class="btn btn-success">{% translate "Add Comment" %}</button>
+        {% endif %}
+    </div>
+</div>

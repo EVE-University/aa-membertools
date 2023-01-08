@@ -1,0 +1,7 @@
+include LICENSE
+include README.md
+recursive-include membertools *.py
+recursive-include membertools/static *
+recursive-include membertools/templates *
+recursive-include membertools/locale *.mo
+recursive-exclude membertools/tests *.*

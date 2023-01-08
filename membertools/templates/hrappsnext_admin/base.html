@@ -1,0 +1,33 @@
+{% extends "allianceauth/base.html" %}
+
+{% load static %}
+
+{% block page_title %}{{ page_title|striptags }} - {{ app_title }}{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'membertools/css/hrn-base.css' %}" type="text/css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+    <div id="aa-membertools">
+        <br />
+        {% include "membertools_admin/partials/menu_admin.html" %}
+        <div class="page-header clearfix">
+            <div class="page-title col-md-6">
+                <h3 class="text-left">{{ page_title }}</h3>
+                <p>{{ sub_title }}</p>
+            </div>
+            <div class="search-box col-md-6">
+            {% block search_box %}
+            {% endblock %}
+            </div>
+        </div>
+        <div id="aa-membertools-content" class="page-content">
+        {% block inside_content %}{% endblock %}
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_javascript %}
+<script src="{% static 'membertools/js/hrn-admin.js' %}"></script>
+{% endblock %}
