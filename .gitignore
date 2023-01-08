@@ -1,0 +1,10 @@
+*.log
+*.tmp
+*.bak
+*.old
+__pycache__/
+migrations/__pycache__/
+tests/__pycache__/
+*.egg-info/
+dist/
+build/
