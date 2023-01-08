@@ -477,8 +477,10 @@ def hr_admin_archive_view(request):
 
     if search:
         applications = base_query.filter(
-            Q(character__character_name__icontains=search)
-            | Q(user__profile__main_character__character_name__icontains=search)
+            Q(eve_character__character_name__icontains=search)
+            | Q(
+                eve_character__character_ownership__user__profile__main_character__character_name__icontains=search
+            )
         ).order_by("-closed_on")
     else:
         applications = base_query.all().order_by("-closed_on")
@@ -587,7 +589,7 @@ def hr_admin_char_detail_index(request):
             | Q(
                 eve_character__character_ownership__user__profile__main_character__character_name__icontains=search
             )
-        ).order_by("character__character_name")
+        ).order_by("eve_character__character_name")
     else:
         characters = base_query.all().order_by("eve_character__character_name")
 
