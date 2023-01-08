@@ -13,3 +13,6 @@ __pycache__
 /htmlcov/
 /.tox/
 /coverage.xml
+
+.vscode
+settings.json
