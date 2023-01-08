@@ -88,7 +88,7 @@ class ApplicationManager(models.Manager):
             form__in=ApplicationForm.objects.get_recruiter_forms_for_user(user)
         ).count()
 
-    def pending_applicaiton_count_for_admin_user(self, user: User) -> Optional[int]:
+    def pending_application_count_for_admin_user(self, user: User) -> Optional[int]:
         """Returns number of Pending applications visible to the user."""
         Application = apps.get_model("membertools", "Application")
         ApplicationForm = apps.get_model("membertools", "ApplicationForm")
