@@ -377,11 +377,9 @@ def hr_app_remove(request, app_id):
 @permission_required("membertools.admin_access")
 def hr_admin_dashboard_view(request):
     user_review = (
-        Application.objects.filter(reviewer=request.user)
-        .filter(
-            Q(status=Application.STATUS_PENDING) | Q(status=Application.STATUS_REVIEW)
-        )
-        .order_by("status", "-created")
+        Application.objects.filter(reviewer__character_ownership__user=request.user)
+        .filter(Q(status=Application.STATUS_WAIT) | Q(status=Application.STATUS_REVIEW))
+        .order_by("status", "-submitted_on")
     )
 
     recruiter_forms = ApplicationForm.objects.get_forms_for_user(request.user)
@@ -402,38 +400,38 @@ def hr_admin_dashboard_view(request):
 def hr_admin_queue_view(request):
     logger.debug("hr_admin_queue_view called by user %s", request.user)
 
-    base_app_query = Application.objects.select_related("user", "form", "form__corp")
+    base_app_query = Application.objects.select_related(
+        "eve_character__character_ownership__user", "form", "form__corp"
+    )
     new_applications = base_app_query.filter(status=Application.STATUS_NEW)
-    pending_applications = base_app_query.filter(status=Application.STATUS_PENDING)
+    waiting_applications = base_app_query.filter(status=Application.STATUS_WAIT)
     review_applications = base_app_query.filter(status=Application.STATUS_REVIEW)
 
     # Always show users applications they have locked even if they lose access to them after locking.
     user_review = (
-        Application.objects.filter(reviewer=request.user)
-        .filter(
-            Q(status=Application.STATUS_PENDING) | Q(status=Application.STATUS_REVIEW)
-        )
-        .order_by("status", "-created")
+        Application.objects.filter(reviewer__character_ownership__user=request.user)
+        .filter(Q(status=Application.STATUS_WAIT) | Q(status=Application.STATUS_REVIEW))
+        .order_by("status", "-submitted_on")
     )
     if not request.user.is_superuser:
         user_forms = ApplicationForm.objects.get_forms_for_user(request.user)
 
         new_applications = new_applications.filter(form__in=user_forms)
-        pending_applications = pending_applications.filter(form__in=user_forms)
+        waiting_applications = waiting_applications.filter(form__in=user_forms)
         review_applications = review_applications.filter(form__in=user_forms)
 
     logger.debug(
         "Retrieved New: %d, Pending: %d, Review: %d, User Review: %d",
         new_applications.count(),
-        pending_applications.count(),
+        waiting_applications.count(),
         review_applications.count(),
         user_review.count(),
     )
     context = {
         "page_title": _("Queues"),
-        "new_applications": new_applications.order_by("created"),
-        "pending_applications": pending_applications.order_by("created"),
-        "review_applications": review_applications.order_by("created"),
+        "new_applications": new_applications.order_by("submitted_on"),
+        "waiting_applications": waiting_applications.order_by("submitted_on"),
+        "review_applications": review_applications.order_by("submitted_on"),
         "user_review_applications": user_review,
     }
 
@@ -450,9 +448,16 @@ def hr_admin_queue_view(request):
 )
 def hr_admin_archive_view(request):
     base_query = (
-        Application.objects.select_related("user", "form", "form__corp", "form__title")
+        Application.objects.select_related(
+            "eve_character__character_ownership__user",
+            "form",
+            "form__corp",
+            "form__title",
+        )
         .filter(
-            Q(status=Application.STATUS_ACCEPT) | Q(status=Application.STATUS_REJECT)
+            Q(decision=Application.DECISION_ACCEPT)
+            | Q(decision=Application.DECISION_REJECT)
+            | Q(decision=Application.DECISION_WITHDRAW)
         )
         .filter(form__in=ApplicationForm.objects.get_forms_for_user(request.user))
     )
@@ -474,9 +479,9 @@ def hr_admin_archive_view(request):
         applications = base_query.filter(
             Q(character__character_name__icontains=search)
             | Q(user__profile__main_character__character_name__icontains=search)
-        ).order_by("-closed")
+        ).order_by("-closed_on")
     else:
-        applications = base_query.all().order_by("-closed")
+        applications = base_query.all().order_by("-closed_on")
 
     paginator = Paginator(applications, 50)
 
@@ -560,7 +565,9 @@ def hr_admin_view(request, app_id, comment_form=None, edit_comment=None):
 @login_required
 @permission_required(["membertools.admin_access", "membertools.character_admin_access"])
 def hr_admin_char_detail_index(request):
-    base_query = Character.objects.select_related("character", "user")
+    base_query = Character.objects.select_related(
+        "eve_character", "eve_character__character_ownership__user"
+    )
     search = None
 
     if request.GET.get("search"):
@@ -576,11 +583,13 @@ def hr_admin_char_detail_index(request):
 
     if search:
         characters = base_query.filter(
-            Q(character__character_name__icontains=search)
-            | Q(user__profile__main_character__character_name__icontains=search)
+            Q(eve_character__character_name__icontains=search)
+            | Q(
+                eve_character__character_ownership__user__profile__main_character__character_name__icontains=search
+            )
         ).order_by("character__character_name")
     else:
-        characters = base_query.all().order_by("character__character_name")
+        characters = base_query.all().order_by("eve_character__character_name")
 
     paginator = Paginator(characters, 50)
 
