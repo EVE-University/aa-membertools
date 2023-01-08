@@ -142,9 +142,16 @@ def hr_admin_add_shared_context(request, context: dict) -> dict:
 def hr_app_dashboard_view(request):
     cutoff_date = timezone.now() - MEMBERTOOLS_APP_ARCHIVE_TIME
     current_apps = (
-        Application.objects.select_related("user", "form", "form__corp", "form__title")
-        .filter(user=request.user)
-        .filter(Q(approved__isnull=True) | Q(created__gte=cutoff_date))
+        Application.objects.select_related(
+            "eve_character__character_ownership__user",
+            "form",
+            "form__corp",
+            "form__title",
+        )
+        .filter(eve_character__character_ownership__user=request.user)
+        .filter(
+            Q(decision=Application.DECISION_PENDING) | Q(decision_on__gte=cutoff_date)
+        )
     )
 
     available_forms = []
