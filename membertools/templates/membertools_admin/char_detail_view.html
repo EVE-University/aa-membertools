@@ -35,7 +35,7 @@
         <div class="panel panel-primary">
             <div class="panel-heading">{% translate "Characters" %}</div>
             <div class="panel-body">
-            {% include "membertools_admin/partials/characters_admin.html" with current_character=char_detail.character main_character=char_detail.main_character %}
+            {% include "membertools_admin/partials/characters_admin.html" with current_character=char_detail.eve_character main_character=char_detail.main_character %}
             </div>
         </div>
     </div>
@@ -44,7 +44,7 @@
         <div class="panel panel-primary">
             <div class="panel-heading">{% translate "Applications" %}</div>
             <div class="panel-body">
-            {% include "membertools_admin/partials/applist_admin.html" with applications=char_detail.applications %}
+            {% include "membertools_admin/partials/applist_admin.html" with applications=char_detail.applications.all %}
             </div>
         </div>
     </div>

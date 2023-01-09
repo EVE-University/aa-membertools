@@ -15,9 +15,9 @@
         <td class="text-center hidden-xs hidden-sm">
             <img class="ra-avatar img-responsive img-circle" src="{{ char.portrait_url_32 }}">
         </td>
-        <td class="text-center">{{ char.character.character_name }}{% if details.main_character == char.character %} <span class="label label-primary">Main</span>{% endif %}</td>
-        <td class="text-center">{{ char.character.corporation_name }}</td>
-        <td class="text-center">{{ char.character.alliance_name }}</td>
+        <td class="text-center">{{ char.eve_character.character_name }}{% if details.main_character == char.character %} <span class="label label-primary">Main</span>{% endif %}</td>
+        <td class="text-center">{{ char.eve_character.corporation }}</td>
+        <td class="text-center">{{ char.eve_character.alliance }}</td>
         <td class="text-center">{{ char.main_character }}</td>
         <td class="text-center">
         {% if details.character == char %}

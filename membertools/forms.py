@@ -17,7 +17,7 @@ class CommentForm(forms.ModelForm):
     def __init__(self, detail, *args, **kwargs):
         super(CommentForm, self).__init__(*args, **kwargs)
         self.fields["application"].queryset = Application.objects.filter(
-            character=detail.character
+            character=detail
         )
         if self.instance and self.instance.text:
             # Auto focus text box when editing.

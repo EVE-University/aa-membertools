@@ -19,15 +19,15 @@
                 <img class="ra-avatar img-responsive img-circle" src="{{ char.portrait_url_32 }}" width="32" height="32">
             </td>
             <td class="text-center">{{ char.character_name }}{% if main_character and char == main_character %} <span class="label label-primary">Main</span>{% endif %}</td>
-            <td class="text-center">{{ char.corporation_name }}</td>
-            <td class="text-center">{{ char.alliance_name }}</td>
+            <td class="text-center">{{ char.corporation }}</td>
+            <td class="text-center">{{ char.alliance }}</td>
             <td class="text-center">
             {% if char == current_character %}
                 <a href="" class="btn btn-primary disabled" disabled="">
                     <span class="glyphicon glyphicon-eye-close"></span>
                 </a>
-            {% elif char.next_char_detail %}
-                <a href="{% url 'membertools_admin:char_detail_view' char.next_char_detail.id %}" class="btn btn-primary">
+            {% elif char.next_character %}
+                <a href="{% url 'membertools_admin:char_detail_view' char.next_character.id %}" class="btn btn-primary">
                     <span class="glyphicon glyphicon-eye-open"></span>
                 </a>
             {% else %}

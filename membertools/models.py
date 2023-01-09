@@ -381,7 +381,9 @@ class Application(models.Model):
                 self.closed = timezone.now()
 
     def __str__(self):
-        formatted = date_format(self.created, format="SHORT_DATE_FORMAT", use_l10n=True)
+        formatted = date_format(
+            self.submitted_on, format="SHORT_DATE_FORMAT", use_l10n=True
+        )
         if self.form.title:
             name = self.form.title
         else:
@@ -655,6 +657,10 @@ class Character(models.Model):
         verbose_name = _("Character")
         verbose_name_plural = _("Characters")
         ordering = ["eve_character__character_name"]
+
+    @cached_property
+    def character_name(self):
+        return self.eve_character.character_name
 
     @cached_property
     def character_ownership(self):

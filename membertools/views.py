@@ -64,13 +64,14 @@ esi = EsiClientProvider()
 
 
 def get_user_characters(request, character):
-    if not character.user:
-        characters = Character.objects.none()
+    if not character.character_ownership.user:
+        characters = EveCharacter.objects.none()
     else:
-        characters = Character.objects.select_related(
-            "eve_character__character_ownership__next_character"
-        ).filter(eve_character__character_ownership__user=character.user)
+        characters = EveCharacter.objects.select_related("next_character").filter(
+            character_ownership__user=character.character_ownership.user
+        )
 
+    logger.debug(characters.query)
     return characters
 
 
@@ -521,12 +522,17 @@ def hr_admin_archive_view(request):
 def hr_admin_view(request, app_id, comment_form=None, edit_comment=None):
     logger.debug(f"hr_admin_view called by user {request.user} for app id {app_id}")
     app = get_object_or_404(Application, pk=app_id)
+
+    try:
+        member = app.main_character.next_character.member
+    except ObjectDoesNotExist:
+        member = None
+
     details, created = Character.objects.get_or_create(
         character=app.character,
         defaults={
             "character": app.character,
-            "member": getattr(app.user, "next_member_detail", None),
-            "user": app.user,
+            "member": member,
         },
     )
     is_auditor = app.form.is_user_auditor(request.user)
@@ -644,9 +650,7 @@ def hr_admin_char_detail_view(
         "char_detail": detail,
         "corp_history": detail.corporation_history.order_by("-record_id").all(),
         "checks": get_checks(detail.user, detail.eve_character, request),
-        "characters": [
-            co.character for co in CharacterOwnership.objects.filter(user=detail.user)
-        ],
+        "characters": get_user_characters(request, detail.eve_character),
         "comments": Comment.objects.filter(member=detail.member, character=detail),
         "edit_comment": edit_comment,
         "comment_form": comment_form
@@ -681,7 +685,7 @@ def hr_admin_char_detail_lookup(request, char_id):
         return HttpResponseBadRequest()
 
     try:
-        detail = Character.objects.get(character__character_id=char_id)
+        detail = Character.objects.get(eve_character__character_id=char_id)
     except Character.DoesNotExist:
         detail = None
 
@@ -693,9 +697,7 @@ def hr_admin_char_detail_lookup(request, char_id):
 
         owner = get_object_or_404(CharacterOwnership, character__character_id=char_id)
         member = getattr(owner.user, "next_member_detail", None)
-        detail = Character.objects.create(
-            character=char, member=member, user=owner.user
-        )
+        detail = Character.objects.create(eve_character=char, member=member)
 
         tasks.update_character.apply(args=[detail.id, True])
 
