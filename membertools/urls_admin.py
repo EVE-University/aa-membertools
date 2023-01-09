@@ -52,7 +52,11 @@ urlpatterns = [
         views.hr_admin_char_detail_lookup,
         name="char_detail_lookup",
     ),
-    path("char/", views.hr_admin_char_detail_view, name="char_detail_view"),
+    path(
+        "char/<int:char_detail_id>",
+        views.hr_admin_char_detail_view,
+        name="char_detail_view",
+    ),
     path(
         "char/<int:char_id>/comment/new",
         views.hr_admin_char_detail_comment_create,

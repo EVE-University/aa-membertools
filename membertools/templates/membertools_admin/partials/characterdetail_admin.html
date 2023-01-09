@@ -4,20 +4,20 @@
 {% load humanize %}
 <div class="details-flex">
     <div class="details-portrait hidden-xs">
-        <img class="img-rounded" src="{{ char_detail.character.portrait_url_256 }}" width="256" height="256">
+        <img class="img-rounded" src="{{ char_detail.eve_character.portrait_url_256 }}" width="256" height="256">
     </div>
     <div class="details-info">
         <div class="row">
             <div class="col-lg-6">
                 <dl class="dl-horizontal">
                     <dt>Character:</dt>
-                    <dd class="nowrap">{{ char_detail.character }}</dd>
+                    <dd class="nowrap">{{ char_detail.eve_character }}</dd>
                     <dt>Corporation:</dt>
-                    <dd>{{ char_detail.character.corporation_name }}
+                    <dd>{{ char_detail.eve_character.corporation_name }}
                     <dt>Alliance:</dt>
-                    <dd>{{ char_detail.character.alliance_name }}
+                    <dd>{{ char_detail.eve_character.alliance_name }}
                     <dt>Faction:</dt>
-                    <dd>{{ char_detail.character.faction_name }}
+                    <dd>{{ char_detail.eve_character.faction_name }}
                     <dt>Born:</dt>
                     <dd title="{{ char_detail.birthday }}">{{ char_detail.birthday|naturaltime }}</dd>
                     <dt>Security Status:</dt>
