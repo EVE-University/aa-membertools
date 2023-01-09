@@ -222,7 +222,7 @@ def hr_app_view(request, app_id):
         "page_title": _("View Application") + f": {app.character}",
         "sub_title": str(app.form),
         "app": app,
-        "checks": get_checks(app.user, app.character, request),
+        "checks": get_checks(app.user, app.eve_character, request),
         "responses": app.responses.all(),
     }
     return render(
@@ -290,16 +290,16 @@ def hr_app_create_view(request, form_id):
 
             if Application.objects.filter(
                 form=form,
-                user=request.user,
-                character=selected_character,
+                eve_character=selected_character,
+                character=detail,
                 status=Application.STATUS_NEW,
             ).exists():
                 raise IntegrityError("Application already exists.")
 
             application = Application.objects.create(
-                user=request.user,
                 form=form,
-                character=selected_character,
+                eve_character=selected_character,
+                character=detail,
                 status=Application.STATUS_NEW,
             )
 
