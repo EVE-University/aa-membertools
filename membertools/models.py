@@ -176,12 +176,15 @@ class ApplicationForm(models.Model):
             return []
 
         # TODO: Add settings param for this timedelta
-        base_app_query = self.applications.filter(user=user).filter(
-            Q(closed__isnull=False)
-            & Q(closed__lte=timezone.now() + timedelta(minutes=5))
+        base_app_query = self.applications.filter(
+            eve_character__character_ownership__user=user
+        ).filter(
+            Q(closed_on__isnull=False)
+            & Q(closed_on__lte=timezone.now() + timedelta(minutes=5))
             | (
-                ~Q(status=Application.STATUS_ACCEPT)
-                & ~Q(status=Application.STATUS_REJECT)
+                ~Q(status=Application.DECISION_ACCEPT)
+                & ~Q(status=Application.DECISION_REJECT)
+                & ~Q(status=Application.DECISION_WITHDRAW)
             )
         )
         none_title = ApplicationTitle.objects.get(name="None")
@@ -190,7 +193,7 @@ class ApplicationForm(models.Model):
         ]
 
         try:
-            main_detail = main_char.next_char_detail
+            main_detail = main_char.next_character
             try:
                 main_applied = main_detail.applied_title
             except ObjectDoesNotExist:
@@ -200,7 +203,7 @@ class ApplicationForm(models.Model):
             main_applied = none_title
 
         try:
-            member = user.next_member_detail
+            member = main_char.next_character.member
             try:
                 member_awarded = member.awarded_title
             except ObjectDoesNotExist:
@@ -212,24 +215,24 @@ class ApplicationForm(models.Model):
         eligible_chars = []
 
         logger.debug("M: %s MA: %s", member, member_awarded)
-        for char in owned_chars:
+        for eve_char in owned_chars:
             try:
-                char_detail = char.next_char_detail
+                character = eve_char.next_character
                 try:
-                    char_applied = char_detail.applied_title
+                    char_applied = character.applied_title
                 except ObjectDoesNotExist:
                     char_applied = none_title
             except ObjectDoesNotExist:
-                char_detail = None
+                character = None
                 char_applied = none_title
 
-            logger.debug("C: %s CD: %s CA: %s", char, char_detail, char_applied)
+            logger.debug("C: %s CD: %s CA: %s", eve_char, character, char_applied)
 
             # Check if we meet basic corp requirements
-            if self.title and char.corporation != self.corp:
+            if self.title and eve_char.corporation != self.corp:
                 logger.debug("Isn't in corp for title form")
                 continue
-            elif not self.title and char.corporation == self.corp:
+            elif not self.title and eve_char.corporation == self.corp:
                 logger.debug("Is in corp for corp form")
                 continue
 
@@ -243,14 +246,14 @@ class ApplicationForm(models.Model):
                 continue
 
             # Recent app for this char
-            query = base_app_query.filter(character=char)
+            query = base_app_query.filter(eve_character=eve_char)
             if query.count():
                 logger.debug("Recent or active app(s) for char: %s", query.all())
                 continue
 
             # Handle title form logic...
             if self.title:
-                if char != main_char:
+                if eve_char != main_char:
                     if self.title > main_applied:
                         logger.debug(
                             "Alt cannot use title form for a higher title than main has applied"
@@ -264,7 +267,7 @@ class ApplicationForm(models.Model):
                         logger.debug("Not showing already passed/earned title for main")
                         continue
 
-            eligible_chars.append(char)
+            eligible_chars.append(eve_char)
 
         return eligible_chars
 
@@ -684,9 +687,7 @@ class Character(models.Model):
     def _get_ma_character(character):
         try:
             MACharacter = apps.get_model("memberaudit", "Character")
-            ma_character = MACharacter.objects.get(
-                character_ownership__character=character
-            )
+            ma_character = MACharacter.objects.get(eve_character=character)
         except LookupError:
             return None
         except MACharacter.DoesNotExist:
