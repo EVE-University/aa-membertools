@@ -22,6 +22,9 @@ from allianceauth.eveonline.models import (
     EveCharacter,
     EveCorporationInfo,
 )
+
+from esi.models import Token
+
 from allianceauth.services.hooks import get_extension_logger
 
 from .app_settings import MEMBERTOOLS_MAIN_CORP_ID
@@ -532,6 +535,7 @@ class Member(models.Model):
     )
     first_joined = models.DateTimeField(blank=True, null=True)
     last_joined = models.DateTimeField(blank=True, null=True)
+    characters = models.ManyToManyField(EveCharacter, through="CharacterLink")
 
     objects = MemberManager()
 
@@ -847,10 +851,25 @@ class CharacterUpdateStatus(models.Model):
         return f"{self.character} [{self.updated_on}]: {self.get_status_display()}"
 
 
-# class CharacterLink(models.Model):
-#     character = models.ForeignKey(EveCharacter, on_delete=models.CASCADE, related_name="+")
-#     member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name="linked_characters")
-#     source = models.CharField(max_length="255")
-#     linked_on = models.DateTimeField()
-#     linked_by = models.ForeignKey(EveCharacter, on_delete=models.CASCADE, related_name="+")
-#     certainty =
+class CharacterLink(models.Model):
+    SOURCE_ESI = 1
+    SOURCE_PREVIOUS_ESI = 2
+    SOURCE_MANUAL = 3
+    SOURCE_CHOICES = (
+        (SOURCE_ESI, _("ESI Verified")),
+        (SOURCE_PREVIOUS_ESI, _("Previous ESI")),
+        (SOURCE_MANUAL, _("Manually Added")),
+    )
+    character = models.ForeignKey(Character, on_delete=models.CASCADE, related_name="+")
+    member = models.ForeignKey(
+        Member, on_delete=models.CASCADE, related_name="character_links"
+    )
+    source = models.SmallIntegerField(choices=SOURCE_CHOICES)
+    linked_on = models.DateTimeField()
+    linked_by = models.ForeignKey(
+        EveCharacter, on_delete=models.CASCADE, related_name="+"
+    )
+    esi_token = models.ForeignKey(
+        Token, on_delete=models.SET_NULL, blank=True, null=True
+    )
+    reason = models.TextField(max_length=1024)
