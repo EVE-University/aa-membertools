@@ -344,7 +344,9 @@ class Application(models.Model):
     status = models.SmallIntegerField(choices=STATUS_CHOICES, default=STATUS_NEW)
     status_on = models.DateTimeField(auto_now_add=True)
     last_status = models.SmallIntegerField(choices=STATUS_CHOICES, default=STATUS_NEW)
-    decision = models.SmallIntegerField()
+    decision = models.SmallIntegerField(
+        choices=DECISION_CHOICES, default=DECISION_PENDING
+    )
     decision_by = models.ForeignKey(
         EveCharacter, on_delete=models.CASCADE, blank=True, null=True, related_name="+"
     )
