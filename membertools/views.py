@@ -252,7 +252,10 @@ def hr_app_create_view(request, form_id):
     if request.method == "POST":
         try:
             # Use Member row if user has one available.
-            member = getattr(request.user, "next_member_detail", None)
+            try:
+                member = request.user.profile.main_character.next_character.member
+            except ObjectDoesNotExist:
+                member = None
 
             selected_character_id = int(request.POST.get("selected_character_id", 0))
             if not selected_character_id:
@@ -263,8 +266,8 @@ def hr_app_create_view(request, form_id):
             ).character
 
             detail, __ = Character.objects.update_or_create(
-                character=selected_character,
-                defaults={"user": request.user, "member": member},
+                eve_character=selected_character,
+                defaults={"eve_character": selected_character, "member": member},
             )
 
             tasks.update_character.delay(detail.id, True)
