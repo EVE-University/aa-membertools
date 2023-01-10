@@ -17,7 +17,7 @@
             <td class="text-center">{{ app.eve_character.character_name }}</td>
             <td class="text-center">{{ app.form }}</td>
             <td class="text-center">
-            {% include "membertools/partials/app_status_app.html" with application=app %}
+            {% include "membertools/partials/app_status_label.html" with application=app %}
             </td>
             <td class="text-center">
                 <a href="{% url 'membertools:view' app.id %}" class="btn btn-primary">

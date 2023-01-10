@@ -8,18 +8,7 @@
 {% block inside_content %}
 <div class="container-fluid">
     <div class="row">
-    {% if app.status == app.STATUS_NEW %}
-        <div class="alert alert-info text-center">{{ app.get_status_display }}</div>
-    {% elif app.status == app.STATUS_REVIEW %}
-        <div class="alert alert-primary text-center">{{ app.get_status_display }}</div>
-    {% elif app.status == app.STATUS_ACCEPT %}
-        <div class="alert alert-success text-center">{{ app.get_status_display }}</div>
-    {% elif app.status == app.STATUS_REJECT %}
-        <div class="alert alert-danger text-center">{{ app.get_status_display }}</div>
-    {% else %}
-        <div class="alert alert-warning text-center">{{ app.get_status_display }}</div>
-    {% endif %}
-
+        {% include "membertools/partials/app_status_banner.html" with application=app %}
     </div>
     <div class="row">
         <div class="panel panel-primary">

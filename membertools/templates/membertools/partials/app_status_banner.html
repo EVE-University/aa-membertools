@@ -1,0 +1,16 @@
+{% comment %}
+{% endcomment %}
+{% load i18n %}
+{% if app.status == app.STATUS_NEW %}
+<div class="alert alert-info text-center">{{ app.get_status_display }}</div>
+{% elif app.status == app.STATUS_REVIEW %}
+<div class="alert alert-primary text-center">{{ app.get_status_display }}</div>
+{% elif app.DECISION == app.DECISION_ACCEPT %}
+<div class="alert alert-success text-center">{{ app.get_decision_display }}</div>
+{% elif app.DECISION == app.DECISION_REJECT %}
+<div class="alert alert-danger text-center">{{ app.get_decision_display }}</div>
+{% elif app.DECISION == app.DECISION_WITHDRAW %}
+<div class="alert alert-info text-center">{{ app.get_decision_display }}</div>
+{% else %}
+<div class="alert alert-warning text-center">{{ app.get_status_display }}</div>
+{% endif %}

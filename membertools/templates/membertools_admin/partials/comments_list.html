@@ -10,7 +10,7 @@
     {% if comment == edit_comment %}
         <form class="form-signin" role="form" method="POST" action="{{ base_url }}/comment/{{ comment.id }}/edit">
             {% csrf_token %}
-            {% include "membertools_admin/partials/comment_form_admin.html" %}
+            {% include "membertools_admin/partials/comment_form.html" %}
         </form>
     {% else %}
         <div class="comment-meta">
