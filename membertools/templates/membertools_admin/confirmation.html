@@ -1,0 +1,12 @@
+{% extends "membertools_admin/base.html" %}
+{% load bootstrap %}
+{% load static %}
+{% load i18n %}
+
+{% block inside_content %}
+<p>{{message}}</p>
+<form action="" method="POST">
+{% csrf_token %}
+<input type="submit" value="Confirm">
+</form>
+{% endblock inside_content %}

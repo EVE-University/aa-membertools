@@ -8,17 +8,7 @@
 {% block inside_content %}
 <div class="container-fluid">
     <div class="row">
-        {% if app.status == app.STATUS_NEW %}
-            <div class="alert alert-info text-center">{{ app.get_status_display }}</div>
-        {% elif app.status == app.STATUS_REVIEW %}
-            <div class="alert alert-info text-center">{{ app.get_status_display }}: {{ app.reviewer.profile.main_character }}</div>
-        {% elif app.status == app.STATUS_ACCEPT %}
-            <div class="alert alert-success text-center">{{ app.get_status_display }}</div>
-        {% elif app.status == app.STATUS_REJECT %}
-            <div class="alert alert-danger text-center">{{ app.get_status_display }}</div>
-        {% else %}
-            <div class="alert alert-warning text-center">{{ app.get_status_display }}</div>
-        {% endif %}
+        {% include "membertools_admin/partials/app_status_banner.html" with application=app %}
     </div>
     <div class="row">
         <div class="panel panel-primary">
@@ -28,28 +18,28 @@
         <div class="panel panel-primary clearfix">
             <div class="panel-heading">{% translate "Character Details" %}</div>
             <div class="panel-body">
-            {% include "membertools_admin/partials/characterdetail_admin.html" %}
+            {% include "membertools_admin/partials/character_detail.html" %}
             </div>
         </div>
     {% if char_detail.member %}
         <div class="panel panel-primary clearfix">
             <div class="panel-heading">{% translate "Member Details" %}</div>
             <div class="panel-body">
-            {% include "membertools_admin/partials/memberdetail_admin.html" with member=char_detail.member %}
+            {% include "membertools_admin/partials/member_detail.html" with member=char_detail.member %}
             </div>
         </div>
     {% endif %}
         <div class="panel panel-primary clearfix">
             <div class="panel-heading">{% translate "Required Steps" %}</div>
-            {% include "membertools_admin/partials/checks_admin.html" %}
+            {% include "membertools_admin/partials/checks_table.html" %}
         </div>
         <div class="panel panel-primary">
             <div class="panel-heading">{% translate "Links" %}</div>
-            {% include "membertools_admin/partials/links_admin.html" with character=app.character memberaudit_character=char_detail.memberaudit_character %}
+            {% include "membertools_admin/partials/background_links.html" with character=app.character memberaudit_character=char_detail.memberaudit_character %}
         </div>
         <div class="panel panel-primary">
             <div class="panel-heading">{% translate "Characters" %}</div>
-            {% include "membertools_admin/partials/characters_admin.html" with characters=app.characters main_character=app.main_character %}
+            {% include "membertools_admin/partials/characters_table.html" with characters=app.characters main_character=app.main_character %}
         </div>
     </div>
     <div class="row">
@@ -69,17 +59,17 @@
         <div class="panel panel-primary">
             <div class="panel-heading">{% translate "Actions" %}</div>
             <div class="panel-body text-center">
-            {% if app.status == app.STATUS_REVIEW and app.reviewer == user %}
+            {% if app.status == app.STATUS_REVIEW and app.reviewer.character_ownership.user == user %}
                 <a href="{% url 'membertools_admin:action_approve' app.id %}" class="btn btn-success">{% translate "Accept" %}</a>
                 <a href="{% url 'membertools_admin:action_pending' app.id %}"
                     class="btn btn-warning">{% trans "Pending" %}</a>
-                <a href="{% url 'membertools_admin:action_return' app.id %}"
-                    class="btn btn-primary">{% trans "Return" %}</a>
+                <a href="{% url 'membertools_admin:action_release' app.id %}"
+                    class="btn btn-primary">{% trans "Release" %}</a>
                 {% if perms.membertools.reject_application %}
                 <a href="{% url 'membertools_admin:action_reject' app.id %}" class="btn btn-danger">{% translate "Reject" %}</a>
                 {% endif %}
             {% elif app.status == app.STATUS_REVIEW or app.status == app.STATUS_PENDING %}
-                {% if app.status == app.STATUS_PENDING and app.reviewer == user %}
+                {% if app.status == app.STATUS_PENDING and app.character_ownership.reviewer == user %}
                 <a href="{% url 'membertools_admin:action_start_review' app.id %}" class="btn btn-info">{% translate "Continue Review" %}</a>
                 {% elif not app.reviewer %}
                 <a href="{% url 'membertools_admin:action_start_review' app.id %}" class="btn btn-info">{% translate "Start Review" %}</a>
@@ -105,7 +95,7 @@
         <div class="panel panel-primary">
             <div class="panel-heading">{% translate "Comments" %}</div>
             <div class="panel-body">
-            {% include "membertools_admin/partials/comments_admin.html" %}
+            {% include "membertools_admin/partials/comments_list.html" %}
             </div>
         </div>
     </div>
@@ -121,7 +111,7 @@
         <div class="panel-body">
             <form class="form-signin" role="form" method="POST" action="{% url 'membertools_admin:comment_create' app.id %}">
                 {% csrf_token %}
-                {% include "membertools_admin/partials/comment_form_admin.html" %}
+                {% include "membertools_admin/partials/comment_form.html" %}
             </form>
         </div>
     </div>
@@ -129,5 +119,5 @@
 </div>
 {% endblock %}
 {% block search_box %}
-{% include "membertools_admin/partials/search_form_admin.html" %}
+{% include "membertools_admin/partials/search_form.html" %}
 {% endblock %}

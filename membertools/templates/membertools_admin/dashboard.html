@@ -8,7 +8,7 @@
 <div class="panel panel-primary">
     <div class="panel-heading"><b>{% translate "Your Active Applications" %}</b></div>
     {% if user_review_applications %}
-    {% include "membertools_admin/partials/appqueue_admin.html" with applications=user_review_applications %}
+    {% include "membertools_admin/partials/app_queue.html" with applications=user_review_applications %}
     {% else %}
     <div class="panel-body">
         <p>You don't have any active/pending applications.</p>

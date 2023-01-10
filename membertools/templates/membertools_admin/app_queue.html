@@ -7,7 +7,7 @@
 {% if user_review_applications %}
 <div class="panel panel-warning">
     <div class="panel-heading"><b>{% translate "Your Active Applications" %}</b></div>
-    {% include "membertools_admin/partials/appqueue_admin.html" with applications=user_review_applications %}
+    {% include "membertools_admin/partials/app_queue.html" with applications=user_review_applications %}
 </div>
 {%  endif %}
 <ul class="nav nav-tabs">
@@ -18,17 +18,17 @@
 <div class="tab-content">
     <div id="new" class="tab-pane fade in active panel panel-default">
         <div class="panel-body">
-        {% include "membertools_admin/partials/appqueue_admin.html" with applications=new_applications%}
+        {% include "membertools_admin/partials/app_queue.html" with applications=new_applications%}
         </div>
     </div>
     <div id="pending" class="tab-pane fade panel panel-default">
         <div class="panel-body">
-        {% include "membertools_admin/partials/appqueue_admin.html" with applications=waiting_applications%}
+        {% include "membertools_admin/partials/app_queue.html" with applications=waiting_applications%}
         </div>
     </div>
     <div id="review" class="tab-pane fade panel panel-default">
         <div class="panel-body">
-        {% include "membertools_admin/partials/appqueue_admin.html" with applications=review_applications%}
+        {% include "membertools_admin/partials/app_queue.html" with applications=review_applications%}
         </div>
     </div>
 </div>

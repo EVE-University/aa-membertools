@@ -10,9 +10,9 @@
     {% include "membertools_admin/partials/chardetail_list_admin.html" %}
     </div>
 </div>
-{% include "membertools_admin/partials/pagination_admin.html" with page_obj=characters %}
+{% include "membertools_admin/partials/pagination.html" with page_obj=characters %}
 {% endblock %}
 
 {% block search_box %}
-{% include "membertools_admin/partials/search_form_admin.html" %}
+{% include "membertools_admin/partials/search_form.html" %}
 {% endblock %}

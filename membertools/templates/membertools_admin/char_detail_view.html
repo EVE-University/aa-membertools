@@ -11,7 +11,7 @@
         <div class="panel panel-primary clearfix">
             <div class="panel-heading">{% translate "Character Details" %}</div>
             <div class="panel-body">
-            {% include "membertools_admin/partials/characterdetail_admin.html" %}
+            {% include "membertools_admin/partials/character_detail.html" %}
             </div>
         </div>
     </div>
@@ -20,7 +20,7 @@
         <div class="panel panel-primary clearfix">
             <div class="panel-heading">{% translate "Member Details" %}</div>
             <div class="panel-body">
-            {% include "membertools_admin/partials/memberdetail_admin.html" with member=char_detail.member %}
+            {% include "membertools_admin/partials/member_detail.html" with member=char_detail.member %}
             </div>
         </div>
     </div>
@@ -28,14 +28,14 @@
     <div class="row">
         <div class="panel panel-primary clearfix">
             <div class="panel-heading">{% translate "Required Steps" %}</div>
-            {% include "membertools_admin/partials/checks_admin.html" %}
+            {% include "membertools_admin/partials/checks_table.html" %}
         </div>
     </div>
     <div class="row">
         <div class="panel panel-primary">
             <div class="panel-heading">{% translate "Characters" %}</div>
             <div class="panel-body">
-            {% include "membertools_admin/partials/characters_admin.html" with current_character=char_detail.eve_character main_character=char_detail.main_character %}
+            {% include "membertools_admin/partials/characters_table.html" with current_character=char_detail.eve_character main_character=char_detail.main_character %}
             </div>
         </div>
     </div>
@@ -44,7 +44,7 @@
         <div class="panel panel-primary">
             <div class="panel-heading">{% translate "Applications" %}</div>
             <div class="panel-body">
-            {% include "membertools_admin/partials/applist_admin.html" with applications=char_detail.applications.all %}
+            {% include "membertools_admin/partials/app_list.html" with applications=char_detail.applications.all %}
             </div>
         </div>
     </div>
@@ -54,7 +54,7 @@
         <div class="panel panel-primary">
             <div class="panel-heading">{% translate "Comments" %}</div>
             <div class="panel-body">
-            {% include "membertools_admin/partials/comments_admin.html" %}
+            {% include "membertools_admin/partials/comments_list.html" %}
             </div>
         </div>
     </div>
@@ -65,7 +65,7 @@
         <div class="panel-body">
             <form class="form-signin" role="form" method="POST" action="{% url 'membertools_admin:char_detail_comment_create' char_detail.id %}">
                 {% csrf_token %}
-                {% include "membertools_admin/partials/comment_form_admin.html" %}
+                {% include "membertools_admin/partials/comment_form.html" %}
             </form>
         </div>
     </div>
@@ -73,5 +73,5 @@
 </div>
 {% endblock %}
 {% block search_box %}
-{% include "membertools_admin/partials/search_form_admin.html" %}
+{% include "membertools_admin/partials/search_form.html" %}
 {% endblock %}
