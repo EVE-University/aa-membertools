@@ -420,17 +420,19 @@ class Application(models.Model):
             return None
 
     @cached_property
+    def member(self):
+        try:
+            return self.character.member
+        except AttributeError:
+            return None
+
+    @cached_property
     def characters(self):
         return [o.character for o in self.user.character_ownerships.all()]
 
     @cached_property
     def reviewer_str(self):
-        if self.reviewer_character:
-            return str(self.reviewer_character)
-        elif self.reviewer:
-            return "User " + str(self.reviewer)
-        else:
-            return None
+        return str(self.reviewer)
 
 
 class ApplicationResponse(models.Model):
