@@ -363,22 +363,23 @@ class Application(models.Model):
 
     objects = ApplicationManager()
 
-    def clean(self):
-        # Some logic to keep state more consistent when being edited via admin
-        if (
-            self.status != Application.STATUS_ACCEPT
-            and self.status != Application.STATUS_REJECT
-        ):
-            self.closed = None
-        if self.status == Application.STATUS_NEW:
-            self.reviewer = None
-            self.last_status = Application.STATUS_NEW
-        elif (
-            self.status == Application.STATUS_ACCEPT
-            or self.status == Application.STATUS_REJECT
-        ):
-            if not self.closed:
-                self.closed = timezone.now()
+    # TODO: Update clean for new schema
+    # def clean(self):
+    #     # Some logic to keep state more consistent when being edited via admin
+    #     if (
+    #         self.status != Application.STATUS_ACCEPT
+    #         and self.status != Application.STATUS_REJECT
+    #     ):
+    #         self.closed = None
+    #     if self.status == Application.STATUS_NEW:
+    #         self.reviewer = None
+    #         self.last_status = Application.STATUS_NEW
+    #     elif (
+    #         self.status == Application.STATUS_ACCEPT
+    #         or self.status == Application.STATUS_REJECT
+    #     ):
+    #         if not self.closed:
+    #             self.closed = timezone.now()
 
     def __str__(self):
         formatted = date_format(
