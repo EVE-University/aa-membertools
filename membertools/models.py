@@ -473,12 +473,12 @@ class ApplicationAction(models.Model):
     )
     action = models.SmallIntegerField(choices=ACTION_CHOICES)
     action_on = models.DateTimeField(auto_now_add=True)
-    action_by = models.OneToOneField(
+    action_by = models.ForeignKey(
         EveCharacter,
         on_delete=models.CASCADE,
         related_name="+",
     )
-    override_by = models.OneToOneField(
+    override_by = models.ForeignKey(
         EveCharacter,
         on_delete=models.CASCADE,
         blank=True,
