@@ -199,7 +199,7 @@ class ApplicationForm(models.Model):
             main_detail = main_char.next_character
             try:
                 main_applied = main_detail.applied_title
-            except ObjectDoesNotExist:
+            except AttributeError:
                 main_applied = none_title
         except ObjectDoesNotExist:
             main_detail = None
@@ -209,7 +209,7 @@ class ApplicationForm(models.Model):
             member = main_char.next_character.member
             try:
                 member_awarded = member.awarded_title
-            except ObjectDoesNotExist:
+            except AttributeError:
                 member_awarded = none_title
         except ObjectDoesNotExist:
             member = None
