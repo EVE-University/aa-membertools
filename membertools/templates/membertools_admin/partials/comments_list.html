@@ -4,7 +4,7 @@
 {% for comment in comments %}
 <div class="comment-row">
     <div class="comment-avatar">
-        <img class="ra-avatar img-responsive img-circle" src="{{ comment.poster.profile.main_character.portrait_url_64 }}" width="45" height="45">
+        <img class="ra-avatar img-responsive img-circle" src="{{ comment.poster.portrait_url_64 }}" width="45" height="45">
     </div>
     <div class="comment-body">
     {% if comment == edit_comment %}
@@ -14,7 +14,7 @@
         </form>
     {% else %}
         <div class="comment-meta">
-            <span class="comment-poster">{{ comment.poster_character }}</span>
+            <span class="comment-poster">{{ comment.poster }}</span>
             <span class="comment-date" title="{{ comment.created|date:'DATETIME_FORMAT' }}">{{ comment.created|date:"M j, Y" }}</span>
         </div>
         <div class="content">
