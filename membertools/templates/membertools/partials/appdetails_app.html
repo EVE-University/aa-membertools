@@ -11,7 +11,7 @@
         <td class="text-center hidden-xs">{{ application.main_character }}</td>
         <td class="text-center">{{ application.eve_character.character_name }}</td>
         <td class="text-center">{{ application.submitted_on }}</td>
-        <td class="text-center">{% if application.closed_on %}{{ application.closed }}{% else %}-{% endif %}</td>
-        <td class="text-center">{% if application.reviewer %}{{ application.reviewer.character_ownership.user.profile.main_character }}{% else %}-{% endif %}</td>
+        <td class="text-center">{% if application.closed_on %}{{ application.closed_on }}{% else %}-{% endif %}</td>
+        <td class="text-center">{% if application.reviewer %}{{ application.reviewer.character_name }}{% else %}-{% endif %}</td>
     </tr>
 </table>
