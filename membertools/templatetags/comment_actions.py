@@ -16,7 +16,7 @@ register = template.Library()
 
 
 @register.inclusion_tag(
-    "membertools_admin/partials/comment_actions_admin.html", takes_context=True
+    "membertools_admin/partials/comment_actions.html", takes_context=True
 )
 def comment_actions(context, comment: Comment):
     user: User = context["user"]
