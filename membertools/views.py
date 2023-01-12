@@ -198,7 +198,9 @@ def hr_app_archive_view(request):
     }
 
     return render(
-        request, "membertools/archive.html", hr_app_add_shared_context(request, context)
+        request,
+        "membertools/app_archive.html",
+        hr_app_add_shared_context(request, context),
     )
 
 
@@ -228,7 +230,7 @@ def hr_app_view(request, app_id):
     }
     return render(
         request,
-        "membertools/view.html",
+        "membertools/app_view.html",
         hr_app_add_shared_context(request, context),
     )
 
@@ -346,7 +348,7 @@ def hr_app_create_view(request, form_id):
     }
     return render(
         request,
-        "membertools/create.html",
+        "membertools/app_create.html",
         hr_app_add_shared_context(request, context),
     )
 
@@ -441,7 +443,7 @@ def hr_admin_queue_view(request):
 
     return render(
         request,
-        "membertools_admin/queue.html",
+        "membertools_admin/app_queue.html",
         hr_admin_add_shared_context(request, context),
     )
 
@@ -506,7 +508,7 @@ def hr_admin_archive_view(request):
 
     return render(
         request,
-        "membertools_admin/archive.html",
+        "membertools_admin/app_archive.html",
         hr_app_add_shared_context(request, context),
     )
 
@@ -529,9 +531,9 @@ def hr_admin_view(request, app_id, comment_form=None, edit_comment=None):
         member = None
 
     details, created = Character.objects.get_or_create(
-        character=app.character,
+        eve_character=app.eve_character,
         defaults={
-            "character": app.character,
+            "eve_character": app.eve_character,
             "member": member,
         },
     )
@@ -546,7 +548,7 @@ def hr_admin_view(request, app_id, comment_form=None, edit_comment=None):
             "app": app,
             "char_detail": details,
             "corp_history": details.corporation_history.order_by("-record_id").all(),
-            "checks": get_checks(app.user, app.character, request),
+            "checks": get_checks(app.user, app.eve_character, request),
             "responses": ApplicationResponse.objects.filter(application=app),
             "comments": Comment.objects.filter(application=app),
             "edit_comment": edit_comment,
@@ -565,7 +567,7 @@ def hr_admin_view(request, app_id, comment_form=None, edit_comment=None):
         }
         return render(
             request,
-            "membertools_admin/view.html",
+            "membertools_admin/app_view.html",
             hr_admin_add_shared_context(request, context),
         )
     else:
@@ -757,15 +759,15 @@ def hr_admin_start_review_action(request, app_id):
             app.form,
         )
         raise PermissionDenied
-    if app.status == app.STATUS_ACCEPT or app.status == app.STATUS_REJECT:
+    if app.status == app.STATUS_CLOSED:
         messages.add_message(
             request,
             messages.ERROR,
-            _("Can not Start Review on a finished application."),
+            _("Can not Start Review on a closed application."),
         )
         return redirect("membertools_admin:view", app_id)
-    if app.status == app.STATUS_REVIEW or app.status == app.STATUS_PENDING:
-        if app.reviewer and app.reviewer != request.user:
+    if app.status == app.STATUS_REVIEW or app.status == app.STATUS_WAIT:
+        if app.reviewer and app.reviewer.character_ownership.user != request.user:
             if not is_manager:
                 logger.warning(
                     "User %s unable to start review %s: already being reviewed by %s",
@@ -784,22 +786,26 @@ def hr_admin_start_review_action(request, app_id):
             logger.info("%s taking over %s for %s", request.user, app, app.reviewer)
             with transaction.atomic():
                 ApplicationAction.objects.create_action(
-                    app, ApplicationAction.RETURN, app.reviewer, None, request.user
+                    app,
+                    ApplicationAction.RELEASE,
+                    app.reviewer,
+                    None,
+                    request.user.profile.main_character,
                 )
                 app.reviewer = request.user
                 app.save()
                 ApplicationAction.objects.create_action(
-                    app, ApplicationAction.START, request.user
+                    app, ApplicationAction.REVIEW, request.user.profile.main_character
                 )
         else:
             logger.info(f"User %s resuming progress on %s", request.user, app)
             with transaction.atomic():
                 app.last_status = app.status
                 app.status = app.STATUS_REVIEW
-                app.reviewer = request.user
+                app.reviewer = request.user.profile.main_character
                 app.save()
                 ApplicationAction.objects.create_action(
-                    app, ApplicationAction.START, request.user
+                    app, ApplicationAction.REVIEW, request.user.profile.main_character
                 )
 
     else:
@@ -807,12 +813,200 @@ def hr_admin_start_review_action(request, app_id):
         with transaction.atomic():
             app.last_status = app.status
             app.status = app.STATUS_REVIEW
-            app.reviewer = request.user
+            app.reviewer = request.user.profile.main_character
             app.save()
             ApplicationAction.objects.create_action(
-                app, ApplicationAction.START, request.user
+                app, ApplicationAction.REVIEW, request.user.profile.main_character
             )
     return redirect("membertools_admin:view", app_id)
+
+
+@login_required
+@permission_required(
+    [
+        "membertools.admin_access",
+        "membertools.application_admin_access",
+        "membertools.view_application",
+        "membertools.review_application",
+    ]
+)
+def hr_admin_release_action(request, app_id):
+    logger.debug(
+        f"hr_admin_release_action called by user {request.user} for app id {app_id}"
+    )
+    app = get_object_or_404(Application, pk=app_id)
+    is_recruiter = is_form_recruiter(app.form, request.user)
+    is_manager = is_form_manager(app.form, request.user)
+    reviewer_user = app.reviewer.character_ownership.user
+
+    if not is_recruiter:
+        logger.warning(
+            "User %s does not have permission to release apps for %s.",
+            request.user,
+            app.form,
+        )
+        raise PermissionDenied
+
+    if app.status == app.STATUS_CLOSED:
+        messages.add_message(
+            request,
+            messages.ERROR,
+            _("Can not release a closed application."),
+        )
+        return redirect("membertools_admin:view", app_id)
+
+    # Can't release an app that isn't locked by reviewer.
+    if not app.reviewer:
+        messages.add_message(
+            request,
+            messages.ERROR,
+            _("Can not release an application that isn't claimed by a reviewer."),
+        )
+        return redirect("membertools_admin:view", app_id)
+
+    if not is_manager and reviewer_user != request.user:
+        logger.warning("User %s attempted to release app_id %d", request.user, app_id)
+        raise PermissionDenied
+
+    if request.method == "POST":
+        old_reviewer = app.reviewer
+        with transaction.atomic():
+            ApplicationAction.objects.create_action(
+                app,
+                ApplicationAction.RELEASE,
+                app.reviewer,
+                None,
+                request.user.profile.main_character
+                if reviewer_user != request.user
+                else None,
+            )
+            app.reviewer = None
+            app.status = app.last_status
+            app.save()
+
+        if reviewer_user != request.user:
+            message = _(
+                "Application released from %(reviewer)s and placed back into its last queue."
+                % {"reviewer": old_reviewer}
+            )
+        else:
+            message = _("Application released and placed back into its last queue.")
+
+        messages.add_message(
+            request,
+            messages.SUCCESS,
+            message,
+        )
+
+        return redirect("membertools_admin:queue")
+
+    context = {
+        "page_title": "Confirm Application Release",
+        "message": _(
+            "Are you sure you wish to release this application back to its last queue?"
+        ),
+        "cancel_url": "",
+    }
+
+    return render(
+        request,
+        "membertools_admin/confirmation.html",
+        hr_admin_add_shared_context(request, context),
+    )
+
+
+@login_required
+@permission_required(
+    [
+        "membertools.admin_access",
+        "membertools.application_admin_access",
+        "membertools.view_application",
+        "membertools.review_application",
+    ]
+)
+def hr_admin_claim_action(request, app_id):
+    logger.debug(
+        f"hr_admin_claim_action called by user {request.user} for app id {app_id}"
+    )
+    app = get_object_or_404(Application, pk=app_id)
+    is_recruiter = is_form_recruiter(app.form, request.user)
+    is_manager = is_form_manager(app.form, request.user)
+
+    if not is_recruiter:
+        logger.warning(
+            "User %s does not have permission to claim apps for %s.",
+            request.user,
+            app.form,
+        )
+        raise PermissionDenied
+
+    if app.status == app.STATUS_CLOSED:
+        messages.add_message(
+            request,
+            messages.ERROR,
+            _("Can not claim a closed application."),
+        )
+        return redirect("membertools_admin:view", app_id)
+
+    # Can't claim an app that isn't locked by reviewer.
+    if not app.reviewer:
+        messages.add_message(
+            request,
+            messages.ERROR,
+            _("Can not claim an application that isn't claimed by a reviewer."),
+        )
+        return redirect("membertools_admin:view", app_id)
+
+    if app.reviewer.character_ownership.user == request.user:
+        messages.add_message(
+            request,
+            messages.ERROR,
+            _("Can not claim an application you are already reviewing."),
+        )
+        return redirect("membertools_admin:view", app_id)
+
+    if not is_manager:
+        logger.warning("User %s attempted to claim app_id %d", request.user, app_id)
+        raise PermissionDenied
+
+    if request.method == "POST":
+        old_reviewer = app.reviewer
+        with transaction.atomic():
+            ApplicationAction.objects.create_action(
+                app,
+                ApplicationAction.RELEASE,
+                app.reviewer,
+                None,
+                request.user.profile.main_character,
+            )
+            app.reviewer = request.user.profile.main_character
+            app.status = app.STATUS_REVIEW
+            app.save()
+            ApplicationAction.objects.create_action(
+                app, ApplicationAction.REVIEW, request.user.profile.main_character
+            )
+
+        messages.add_message(
+            request,
+            messages.SUCCESS,
+            _("Application claimed from %(reviewer)s." % {"reviewer": old_reviewer}),
+        )
+
+        return redirect("membertools_admin:queue")
+
+    context = {
+        "page_title": "Confirm Application Release",
+        "message": _(
+            "Are you sure you wish to release this application back to its last queue?"
+        ),
+        "cancel_url": reverse("membertools_admin:view", args=[app_id]),
+    }
+
+    return render(
+        request,
+        "membertools_admin/confirmation.html",
+        hr_admin_add_shared_context(request, context),
+    )
 
 
 @login_required
@@ -830,15 +1024,27 @@ def hr_admin_approve_action(request, tokens, app_id):
         "hr_admin_approve called by user %s for app id %s", request.user, app_id
     )
     app = get_object_or_404(Application, pk=app_id)
-    if not is_form_recruiter(app.form, request.user):
+    is_recruiter = is_form_recruiter(app.form, request.user)
+    is_manager = is_form_manager(app.form, request.user)
+
+    if not is_recruiter:
         logger.warning(
-            "User %s does not have permission to approve apps for %s.",
+            "User %s does not have permission to accept apps for %s.",
             request.user,
             app.form,
         )
         return HttpResponseForbidden
 
-    if request.user == app.reviewer:
+    if not is_manager and app.reviewer.character_ownership.user != request.user:
+        logger.warning(
+            "User %s does not have permission to override accept apps for %s.",
+            request.user,
+            app.form,
+        )
+
+        return HttpResponseForbidden
+
+    if request.method == "POST":
         logger.info("User %s approving %s.", request.user, app)
         with transaction.atomic():
             member, __ = Member.objects.update_or_create(user=app.user)
@@ -903,6 +1109,7 @@ def hr_admin_approve_action(request, tokens, app_id):
     return redirect("membertools_admin:view", app.id)
 
 
+# Always allow reviewers to wait the applications they have under review.
 @login_required
 @permission_required(
     [
@@ -912,64 +1119,60 @@ def hr_admin_approve_action(request, tokens, app_id):
         "membertools.review_application",
     ]
 )
-def hr_admin_return_action(request, app_id):
+def hr_admin_wait_action(request, app_id):
     logger.debug(
-        "hr_admin_return_action called by user %s for app id %s", request.user, app_id
+        "hr_admin_wait_action called by user %s for app id %s", request.user, app_id
     )
     app = get_object_or_404(Application, pk=app_id)
-    if request.user == app.reviewer:
-        logger.info("User %s returning %s", request.user, app)
-        with transaction.atomic():
-            app.status = app.last_status
-            app.reviewer = None
-            app.save()
-            ApplicationAction.objects.create_action(
-                app, ApplicationAction.RETURN, request.user
-            )
-    elif is_form_manager(app.form, request.user):
-        with transaction.atomic():
-            ApplicationAction.objects.create_action(
-                app, ApplicationAction.RETURN, app.reviewer, None, request.user
-            )
-            app.status = app.last_status
-            app.reviewer = None
-            app.save()
-    else:
+    is_recruiter = is_form_recruiter(app.form, request.user)
+    is_manager = is_form_manager(app.form, request.user)
+
+    if not is_recruiter:
         logger.warning(
-            "User %s tied to return while not reviewing %s", request.user, app
+            "User %s does not have permission to wait apps for %s.",
+            request.user,
+            app.form,
+        )
+        return HttpResponseForbidden
+
+    if not app.reviewer:
+        messages.add_message(
+            request,
+            messages.INFO,
+            _(
+                "You cannot flag an application to wait that isn't being reviewed, sorcerer."
+            ),
         )
 
-    return redirect("membertools_admin:queue")
+    if not is_manager and request.user != app.reviewer.character_ownership.user:
+        logger.warning(
+            "User %s tied to wait while not reviewing %s [%d]",
+            request.user,
+            app,
+            app.id,
+        )
 
+        return HttpResponseForbidden
 
-# Always allow reviewers to pend the applications they have under review.
-@login_required
-@permission_required(
-    [
-        "membertools.admin_access",
-        "membertools.application_admin_access",
-        "membertools.view_application",
-        "membertools.review_application",
-    ]
-)
-def hr_admin_pending_action(request, app_id):
-    logger.debug(
-        "hr_admin_pending_action called by user %s for app id %s", request.user, app_id
+    logger.info("User %s waiting %s", request.user, app)
+    with transaction.atomic():
+        app.status = app.STATUS_WAIT
+        app.save()
+        ApplicationAction.objects.create_action(
+            app,
+            ApplicationAction.WAIT,
+            app.reviewer,
+            None,
+            request.user.profile.main_character
+            if request.user != app.reviewer.character_ownership.user
+            else None,
+        )
+
+    messages.add_message(
+        request,
+        messages.SUCCESS,
+        _("Application has been successfully placed into your Wait queue."),
     )
-    app = get_object_or_404(Application, pk=app_id)
-    if request.user == app.reviewer:
-        logger.info("User %s pending %s", request.user, app)
-        with transaction.atomic():
-            app.status = app.STATUS_PENDING
-            app.save()
-            ApplicationAction.objects.create_action(
-                app, ApplicationAction.PENDING, request.user
-            )
-    else:
-        logger.warning(
-            "User %s tied to pending while not reviewing %s", request.user, app
-        )
-
     return redirect("membertools_admin:queue")
 
 
@@ -990,7 +1193,12 @@ def hr_admin_reject_action(request, tokens, app_id):
         app_id,
     )
     app = get_object_or_404(Application, pk=app_id)
-    if not is_form_recruiter(app.form, request.user, "membertools.reject_application"):
+    is_recruiter = is_form_recruiter(
+        app.form, request.user, "membertools.reject_application"
+    )
+    is_manager = is_form_manager(app.form, request.user)
+
+    if not is_recruiter:
         logger.warning(
             "User %s does not have permission to reject apps for %s.",
             request.user,
@@ -1040,6 +1248,17 @@ def hr_admin_reject_action(request, tokens, app_id):
         logger.warning("User %s not authorized to reject %s", request.user, app)
         return HttpResponseForbidden
 
+    context = {
+        "page_title": "Confirm Reject",
+        "message": _("Are you sure you wish to reject this application?"),
+        "cancel_url": reverse("membertools_admin:view", args=[app_id]),
+    }
+
+    return render(
+        request,
+        "membertools_admin/confirmation.html",
+        hr_admin_add_shared_context(request, context),
+    )
     return redirect("membertools_admin:queue")
 
 
@@ -1065,7 +1284,7 @@ def hr_admin_comment_create(request, app_id):
     application = get_object_or_404(Application, pk=app_id)
 
     form = CommentForm(
-        application.character.next_char_detail,
+        application.character,
         data=request.POST,
     )
 
@@ -1083,13 +1302,9 @@ def hr_admin_comment_create(request, app_id):
             return HttpResponseBadRequest()
 
         comment: Comment = form.instance
-        comment.poster = request.user
-        comment.poster_character = request.user.profile.main_character
-        try:
-            comment.member = application.user.next_member_detail
-        except ObjectDoesNotExist:
-            pass
-        comment.character = application.character.next_char_detail
+        comment.poster = request.user.profile.main_character
+        comment.member = application.member
+        comment.character = application.character
         form.save()
 
         return redirect("membertools_admin:view", app_id)
@@ -1114,9 +1329,7 @@ def hr_admin_comment_edit(request, app_id, comment_id):
     comment = get_object_or_404(Comment, pk=comment_id)
 
     if request.method == "POST":
-        form = CommentForm(
-            application.character.next_char_detail, instance=comment, data=request.POST
-        )
+        form = CommentForm(application.character, instance=comment, data=request.POST)
         logger.debug("Valid: %s", form.is_valid())
 
         if form.is_valid():
@@ -1124,7 +1337,10 @@ def hr_admin_comment_edit(request, app_id, comment_id):
             has_edit_comment = request.user.has_perm("membertools.change_comment")
 
             # Check if user can edit post first
-            if comment.poster != request.user and not has_edit_comment:
+            if (
+                comment.poster.character_ownership.user != request.user
+                and not has_edit_comment
+            ):
                 logger.warning(
                     "User %s attempted to edit another user's comment %d without edit permission.",
                     request.user,
@@ -1169,7 +1385,7 @@ def hr_admin_comment_edit(request, app_id, comment_id):
 
             return redirect("membertools_admin:view", app_id)
     else:
-        form = CommentForm(application.character.next_char_detail, instance=comment)
+        form = CommentForm(application.character, instance=comment)
 
     return hr_admin_view(request, app_id, comment_form=form, edit_comment=comment)
 
@@ -1197,19 +1413,22 @@ def hr_admin_comment_delete(request, app_id, comment_id):
         )
         return HttpResponseForbidden()
 
-    # TODO: Add delete confirmation...
     has_delete_comment = request.user.has_perm(
         "membertools.delete_comment"
     ) & application.form.is_user_manager(request.user)
 
-    if comment.poster != request.user and not has_delete_comment:
+    if (
+        comment.poster.character_ownership.user != request.user
+        and not has_delete_comment
+    ):
         logger.warning(
             "User %s attempted to delete another user's comment %d without delete permission.",
             request.user,
             comment.id,
         )
         return HttpResponseForbidden()
-    elif (
+
+    if (
         timezone.now() >= comment.created + MEMBERTOOLS_COMMENT_SELF_DELETE_TIME
         and not has_delete_comment
     ):
@@ -1219,7 +1438,10 @@ def hr_admin_comment_delete(request, app_id, comment_id):
             _("You can not delete comments older than %s age.")
             % humanize.naturaldelta(MEMBERTOOLS_COMMENT_SELF_DELETE_TIME),
         )
-    else:
+
+        return redirect("membertools_admin:view", app_id)
+
+    if request.method == "POST":
         logger.info(
             "User %s deleted comment_id %s on %s > %s",
             request.user,
@@ -1231,7 +1453,20 @@ def hr_admin_comment_delete(request, app_id, comment_id):
         messages.add_message(
             request, messages.SUCCESS, _("Comment deleted successfully.")
         )
-    return redirect("membertools_admin:view", app_id)
+
+        return redirect("membertools_admin:view", app_id)
+
+    context = {
+        "page_title": "Confirm Comment Deletion",
+        "message": _("Are you sure you wish to delete this comment?"),
+        "cancel_url": reverse("membertools_admin:view", args=[app_id]),
+    }
+
+    return render(
+        request,
+        "membertools_admin/confirmation.html",
+        hr_admin_add_shared_context(request, context),
+    )
 
 
 @login_required
@@ -1244,13 +1479,13 @@ def hr_admin_comment_delete(request, app_id, comment_id):
         "membertools.add_comment",
     ]
 )
-def hr_admin_char_detail_comment_create(request, char_detail_id):
-    logger.debug("Comment Create: CDid: %s", char_detail_id)
+def hr_admin_char_detail_comment_create(request, char_id):
+    logger.debug("Comment Create: CDid: %s", char_id)
 
     if request.method != "POST":
         return HttpResponse("Method Not Allowed", status=405)
 
-    detail = get_object_or_404(Character, pk=char_detail_id)
+    detail = get_object_or_404(Character, pk=char_id)
 
     form = CommentForm(detail, data=request.POST)
 
@@ -1258,14 +1493,13 @@ def hr_admin_char_detail_comment_create(request, char_detail_id):
 
     if form.is_valid():
         comment: Comment = form.instance
-        comment.poster = request.user
-        comment.poster_character = request.user.profile.main_character
+        comment.poster = request.user.profile.main_character
         comment.member = detail.member
         comment.character = detail
         app = form.instance.application
         if (
             app
-            and app.character == detail.eve_character
+            and app.eve_character == detail.eve_character
             and app.form.is_user_recruiter(request.user)
         ) or not app:
             form.save()
@@ -1279,9 +1513,9 @@ def hr_admin_char_detail_comment_create(request, char_detail_id):
             )
             return HttpResponseForbidden()
 
-        return redirect("membertools_admin:char_detail_view", char_detail_id)
+        return redirect("membertools_admin:char_detail_view", char_id)
 
-    return hr_admin_char_detail_view(request, char_detail_id, comment_form=form)
+    return hr_admin_char_detail_view(request, char_id, comment_form=form)
 
 
 @login_required
@@ -1294,10 +1528,10 @@ def hr_admin_char_detail_comment_create(request, char_detail_id):
         "membertools.add_comment",
     ]
 )
-def hr_admin_char_detail_comment_edit(request, char_detail_id, comment_id):
-    logger.debug("Comment Edit: CDid: %s - Cid: %s", char_detail_id, comment_id)
+def hr_admin_char_detail_comment_edit(request, char_id, comment_id):
+    logger.debug("Comment Edit: CDid: %s - Cid: %s", char_id, comment_id)
 
-    detail = get_object_or_404(Character, pk=char_detail_id)
+    detail = get_object_or_404(Character, pk=char_id)
     comment = get_object_or_404(Comment, pk=comment_id)
 
     if request.method == "POST":
@@ -1309,14 +1543,17 @@ def hr_admin_char_detail_comment_edit(request, char_detail_id, comment_id):
             has_edit_comment = request.user.has_perm("membertools.change_comment")
 
             # Check if user can edit post first
-            if comment.poster != request.user and not has_edit_comment:
+            if (
+                comment.poster.character_ownership.user != request.user
+                and not has_edit_comment
+            ):
                 logger.warning(
                     "User %s attempted to edit another user's comment %d without edit permission.",
                     request.user,
                     comment.id,
                 )
                 return HttpResponseForbidden()
-            elif (
+            if (
                 timezone.now() >= comment.created + MEMBERTOOLS_COMMENT_SELF_EDIT_TIME
                 and not has_edit_comment
             ):
@@ -1326,13 +1563,12 @@ def hr_admin_char_detail_comment_edit(request, char_detail_id, comment_id):
                     _("You can not edit comments older than %s age.")
                     % humanize.naturaldelta(MEMBERTOOLS_COMMENT_SELF_EDIT_TIME),
                 )
-                return redirect("membertools_admin:char_detail_view", char_detail_id)
+                return redirect("membertools_admin:char_detail_view", char_id)
 
             # Now make sure the app field if provided is valid
             # Shouldn't be possible to meet this condition without modifying POST requests/form.
             if app and (
-                app.character != detail.eve_character
-                or not app.form.is_user_recruiter(request.user)
+                app.character != detail or not app.form.is_user_recruiter(request.user)
             ):
                 logger.warning(
                     "User %s submitted an invalid/modified comment edit form. (App ID: %d, App Char: %s, Detail Char: %s, Form: %s, Is Recruiter: %s)",
@@ -1352,11 +1588,11 @@ def hr_admin_char_detail_comment_edit(request, char_detail_id, comment_id):
                 request, messages.SUCCESS, _("Comment has been saved successfully.")
             )
 
-            return redirect("membertools_admin:char_detail_view", char_detail_id)
+            return redirect("membertools_admin:char_detail_view", char_id)
     else:
         form = CommentForm(detail, instance=comment)
     return hr_admin_char_detail_view(
-        request, char_detail_id, comment_form=form, edit_comment=comment
+        request, char_id, comment_form=form, edit_comment=comment
     )
 
 
@@ -1370,23 +1606,27 @@ def hr_admin_char_detail_comment_edit(request, char_detail_id, comment_id):
         "membertools.add_comment",
     ]
 )
-def hr_admin_char_detail_comment_delete(request, char_detail_id, comment_id):
-    logger.debug("Comment Delete: CDid: %s - Cid: %s", char_detail_id, comment_id)
+def hr_admin_char_detail_comment_delete(request, char_id, comment_id):
+    logger.debug("Comment Delete: CDid: %s - Cid: %s", char_id, comment_id)
 
-    detail = get_object_or_404(Character, pk=char_detail_id)
+    detail = get_object_or_404(Character, pk=char_id)
     comment = get_object_or_404(Comment, pk=comment_id)
 
     # TODO: Add delete confirmation...
     has_delete_comment = request.user.has_perm("membertools.delete_comment")
 
-    if comment.poster != request.user and not has_delete_comment:
+    if (
+        comment.poster.character_ownership.user != request.user
+        and not has_delete_comment
+    ):
         logger.warning(
-            "User %s attempted to delete another user's comment %d without edit permission.",
+            "User %s attempted to delete another user's comment %d without delete permission.",
             request.user,
             comment.id,
         )
         return HttpResponseForbidden()
-    elif (
+
+    if (
         timezone.now() >= comment.created + MEMBERTOOLS_COMMENT_SELF_DELETE_TIME
         and not has_delete_comment
     ):
@@ -1396,16 +1636,32 @@ def hr_admin_char_detail_comment_delete(request, char_detail_id, comment_id):
             _("You can not delete comments older than %s age.")
             % humanize.naturaldelta(MEMBERTOOLS_COMMENT_SELF_DELETE_TIME),
         )
-    else:
+
+        return redirect("membertools_admin:char_detail_view", char_id)
+
+    if request.method == "POST":
         logger.info(
             "User %s deleted comment_id %s on %s > %s",
             request.user,
             comment.id,
-            detail.member,
-            detail.eve_character,
+            comment.member,
+            comment.character,
         )
         comment.delete()
         messages.add_message(
             request, messages.SUCCESS, _("Comment deleted successfully.")
         )
-    return redirect("membertools_admin:char_detail_view", char_detail_id)
+
+        return redirect("membertools_admin:char_detail_view", char_id)
+
+    context = {
+        "page_title": "Confirm Comment Deletion",
+        "message": _("Are you sure you wish to delete this comment?"),
+        "cancel_url": reverse("membertools_admin:char_detail_view", args=[char_id]),
+    }
+
+    return render(
+        request,
+        "membertools_admin/confirmation.html",
+        hr_admin_add_shared_context(request, context),
+    )

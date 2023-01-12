@@ -289,7 +289,7 @@ class Application(models.Model):
     STATUS_CHOICES = (
         (STATUS_NEW, _("New")),
         (STATUS_REVIEW, _("Under Review")),
-        (STATUS_WAIT, _("Waiting")),
+        (STATUS_WAIT, _("Wait")),
         (STATUS_CLOSED, _("Closed")),
     )
 
@@ -459,7 +459,7 @@ class ApplicationAction(models.Model):
         (REVIEW, _("Start Review")),
         (ACCEPT, _("Accept")),
         (REJECT, _("Reject")),
-        (WAIT, _("Waiting")),
+        (WAIT, _("Wait")),
         (RELEASE, _("Release")),
     )
 

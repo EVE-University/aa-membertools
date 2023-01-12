@@ -31,12 +31,19 @@ urlpatterns = [
         name="action_approve",
     ),
     path(
-        "action/return/<int:app_id>", views.hr_admin_return_action, name="action_return"
+        "action/release/<int:app_id>",
+        views.hr_admin_release_action,
+        name="action_release",
     ),
     path(
-        "action/pending/<int:app_id>",
-        views.hr_admin_pending_action,
-        name="action_pending",
+        "action/claim/<int:app_id>",
+        views.hr_admin_claim_action,
+        name="action_claim",
+    ),
+    path(
+        "action/wait/<int:app_id>",
+        views.hr_admin_wait_action,
+        name="action_wait",
     ),
     path(
         "action/reject/<int:app_id>", views.hr_admin_reject_action, name="action_reject"
@@ -63,12 +70,12 @@ urlpatterns = [
         name="char_detail_comment_create",
     ),
     path(
-        "char/<int:char_detail_id>/comment/<int:comment_id>/edit",
+        "char/<int:char_id>/comment/<int:comment_id>/edit",
         views.hr_admin_char_detail_comment_edit,
         name="char_detail_comment_edit",
     ),
     path(
-        "char/<int:char_detail_id>/comment/<int:comment_id>/delete",
+        "char/<int:char_id>/comment/<int:comment_id>/delete",
         views.hr_admin_char_detail_comment_delete,
         name="char_detail_comment_delete",
     ),
