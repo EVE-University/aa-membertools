@@ -190,7 +190,8 @@ class ApplicationForm(models.Model):
                 & ~Q(status=Application.DECISION_WITHDRAW)
             )
         )
-        none_title = ApplicationTitle.objects.get(name="None")
+        none_title = _get_app_title_none()
+
         owned_chars = [
             co.character for co in CharacterOwnership.objects.filter(user=user)
         ]
