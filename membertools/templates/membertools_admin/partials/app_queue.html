@@ -19,7 +19,7 @@
             <td class="text-center">{{ app.eve_character.character_name }}</td>
             <td class="text-center">{{ app.form }}</td>
             <td class="text-center">{{ app.main_character }}</td>
-            <td class="text-center">{% if app.reviewer %}{{ app.reviewer.eve_character.character_ownership.user.profile.main_character }}{% else %}-{% endif %}</td>
+            <td class="text-center">{% if app.reviewer %}{{ app.reviewer.character_ownership.user.profile.main_character }}{% else %}-{% endif %}</td>
             <td class="text-center">
             {% include "membertools_admin/partials/app_status_label.html" with application=app %}
             </td>
