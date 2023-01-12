@@ -12,7 +12,7 @@
 {%  endif %}
 <ul class="nav nav-tabs">
     <li class="active"><a data-toggle="tab" href="#new">{% trans "New" %}{% if new_applications.count %} <span class="badge">{{ new_applications.count }}{% endif %}</a></li>
-    <li><a data-toggle="tab" href="#pending">{% trans "Pending" %}{% if waiting_applications.count %} <span class="badge">{{ waiting_applications.count }}{% endif %}</a></li>
+    <li><a data-toggle="tab" href="#waiting">{% trans "Waiting" %}{% if waiting_applications.count %} <span class="badge">{{ waiting_applications.count }}{% endif %}</a></li>
     <li><a data-toggle="tab" href="#review">{% trans "Under Review" %}{% if review_applications.count %} <span class="badge">{{ review_applications.count }}{% endif %}</a></li>
 </ul>
 <div class="tab-content">
@@ -21,7 +21,7 @@
         {% include "membertools_admin/partials/app_queue.html" with applications=new_applications%}
         </div>
     </div>
-    <div id="pending" class="tab-pane fade panel panel-default">
+    <div id="waiting" class="tab-pane fade panel panel-default">
         <div class="panel-body">
         {% include "membertools_admin/partials/app_queue.html" with applications=waiting_applications%}
         </div>
