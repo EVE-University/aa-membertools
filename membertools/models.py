@@ -434,6 +434,12 @@ class Application(models.Model):
     def reviewer_str(self):
         return str(self.reviewer)
 
+    def get_status_message(self):
+        return self.STATUS_MESSAGE[self.status]
+
+    def get_decision_message(self):
+        return self.DECISION_MESSAGE[self.decision]
+
 
 class ApplicationResponse(models.Model):
     question = models.ForeignKey(ApplicationQuestion, on_delete=models.CASCADE)
