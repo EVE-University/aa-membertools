@@ -71,7 +71,6 @@ def get_user_characters(request, character):
             character_ownership__user=character.character_ownership.user
         )
 
-    logger.debug(characters.query)
     return characters
 
 
