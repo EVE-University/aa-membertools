@@ -75,10 +75,16 @@ class ApplicationChoice(models.Model):
         return self.choice_text
 
 
-def _get_app_title_none():
+def _get_app_title_none_id():
     res, _ = ApplicationTitle.objects.get_or_create(name="None", priority=0)
 
     return res.id
+
+
+def _get_app_title_none():
+    res, _ = ApplicationTitle.objects.get_or_create(name="None", priority=0)
+
+    return res
 
 
 class ApplicationTitle(models.Model):
@@ -647,7 +653,7 @@ class Character(models.Model):
         on_delete=models.PROTECT,
         blank=True,
         null=True,
-        default=_get_app_title_none,
+        default=_get_app_title_none_id,
     )
     birthday = models.DateTimeField(null=True)
     corporation = models.ForeignKey(
