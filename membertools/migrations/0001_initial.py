@@ -76,7 +76,7 @@ class Migration(migrations.Migration):
                 ('title', models.TextField(null=True)),
                 ('deleted', models.BooleanField(default=False)),
                 ('alliance', models.ForeignKey(null=True, on_delete=django.db.models.deletion.PROTECT, related_name='+', to='eveonline.eveallianceinfo')),
-                ('applied_title', models.ForeignKey(blank=True, default=membertools.models._get_app_title_none, null=True, on_delete=django.db.models.deletion.PROTECT, to='membertools.applicationtitle')),
+                ('applied_title', models.ForeignKey(blank=True, default=membertools.models._get_app_title_none_id, null=True, on_delete=django.db.models.deletion.PROTECT, to='membertools.applicationtitle')),
                 ('corporation', models.ForeignKey(null=True, on_delete=django.db.models.deletion.PROTECT, related_name='+', to='eveonline.evecorporationinfo')),
                 ('eve_character', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='next_character', to='eveonline.evecharacter')),
             ],
@@ -92,7 +92,7 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('first_joined', models.DateTimeField(blank=True, null=True)),
                 ('last_joined', models.DateTimeField(blank=True, null=True)),
-                ('awarded_title', models.ForeignKey(blank=True, default=membertools.models._get_app_title_none, null=True, on_delete=django.db.models.deletion.PROTECT, to='membertools.applicationtitle')),
+                ('awarded_title', models.ForeignKey(blank=True, default=membertools.models._get_app_title_none_id, null=True, on_delete=django.db.models.deletion.PROTECT, to='membertools.applicationtitle')),
             ],
             options={
                 'verbose_name': 'Member',
