@@ -239,10 +239,10 @@ class ApplicationForm(models.Model):
             logger.debug("C: %s CD: %s CA: %s", eve_char, character, char_applied)
 
             # Check if we meet basic corp requirements
-            if self.title and eve_char.corporation != self.corp:
+            if self.title and eve_char.corporation_id != self.corp.corporation_id:
                 logger.debug("Isn't in corp for title form")
                 continue
-            elif not self.title and eve_char.corporation == self.corp:
+            elif not self.title and eve_char.corporation_id == self.corp.corporation_id:
                 logger.debug("Is in corp for corp form")
                 continue
 
