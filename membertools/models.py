@@ -551,10 +551,22 @@ class Member(models.Model):
         on_delete=models.PROTECT,
         blank=True,
         null=True,
-        default=_get_app_title_none,
+        default=_get_app_title_none_id,
     )
     first_joined = models.DateTimeField(blank=True, null=True)
     last_joined = models.DateTimeField(blank=True, null=True)
+    first_main_character = models.ForeignKey(
+        EveCharacter,
+        on_delete=models.CASCADE,
+        related_name="+",
+        null=True,
+    )
+    main_character = models.ForeignKey(
+        EveCharacter,
+        on_delete=models.CASCADE,
+        related_name="next_member",
+        null=True,
+    )
     characters = models.ManyToManyField(EveCharacter, through="CharacterLink")
 
     objects = MemberManager()
@@ -567,21 +579,14 @@ class Member(models.Model):
     @cached_property
     def character_ownership(self):
         try:
-            return self.eve_character.character_ownership
+            return self.main_character.character_ownership
         except ObjectDoesNotExist:
             return None
 
     @cached_property
     def user(self):
         try:
-            return self.eve_character.character_ownership.user
-        except AttributeError:
-            return None
-
-    @cached_property
-    def main_character(self):
-        try:
-            return self.eve_character.character_ownership.user.profile.main_character
+            return self.main_character.character_ownership.user
         except AttributeError:
             return None
 
@@ -589,7 +594,9 @@ class Member(models.Model):
     def characters(self):
         return [
             owner.character
-            for owner in self.user.character_ownerships.order_by(
+            for owner in self.character_ownership.user.character_ownerships.select_related(
+                "character"
+            ).order_by(
                 "character__corporation_id", "character__character_name"
             )
         ]
@@ -629,9 +636,9 @@ class Member(models.Model):
 
     def __str__(self):
         return (
-            str(self.user.profile.main_character.character_name)
-            if self.user.profile.main_character
-            else str(self.user.username)
+            str(self.main_character.character_name)
+            if self.main_character
+            else f"Unknown Member ({self.id})"
         )
 
 
