@@ -59,7 +59,9 @@
         <div class="panel panel-primary">
             <div class="panel-heading">{% translate "Actions" %}</div>
             <div class="panel-body text-center">
-            {% if app.status == app.STATUS_REVIEW and app.reviewer.character_ownership.user == user or app.status == app.STATUS_REVIEW and is_manager %}
+            {% if app.status == app.STATUS_PROCESSED and is_manager %}
+                <a href="{% url 'membertools_admin:action_close' app.id %}" class="btn btn-warning" title="{% translate 'Close this application' %}">{% translate "Close" %}</a>
+            {% elif app.status == app.STATUS_REVIEW and app.reviewer.character_ownership.user == user or app.status == app.STATUS_REVIEW and is_manager %}
                 <a href="{% url 'membertools_admin:action_approve' app.id %}" class="btn btn-success" title="{% translate 'Accept this application' %}">{% translate "Accept" %}</a>
                 <a href="{% url 'membertools_admin:action_wait' app.id %}"
                     class="btn btn-warning" title="{% translate 'Mark application as waiting for feedback or applicant response' %}">{% trans "Wait" %}</a>
