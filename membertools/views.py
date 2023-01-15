@@ -1025,6 +1025,7 @@ def hr_admin_approve_action(request, tokens, app_id):
     app = get_object_or_404(Application, pk=app_id)
     is_recruiter = is_form_recruiter(app.form, request.user)
     is_manager = is_form_manager(app.form, request.user)
+    is_override = request.user.profile.main_character != app.reviewer
 
     if not is_recruiter:
         logger.warning(
@@ -1034,7 +1035,7 @@ def hr_admin_approve_action(request, tokens, app_id):
         )
         return HttpResponseForbidden
 
-    if not is_manager and app.reviewer.character_ownership.user != request.user:
+    if is_override and not is_manager:
         logger.warning(
             "User %s does not have permission to override accept apps for %s.",
             request.user,
@@ -1045,21 +1046,34 @@ def hr_admin_approve_action(request, tokens, app_id):
 
     if request.method == "POST":
         logger.info("User %s approving %s.", request.user, app)
+
+        try:
+            member = app.main_character.next_character.member
+        except ObjectDoesNotExist:
+            member = None
+
         with transaction.atomic():
-            member, __ = Member.objects.update_or_create(user=app.user)
-            char_detail = Character.objects.get(character=app.character)
+            # Are we creating a new Member record for this character?
+            if member is None:
+                member = Member.objects.create(
+                    first_main_character=app.eve_character,
+                    main_character=app.eve_character,
+                )
+                logger.debug("Created new member record for %s", app.eve_character)
+            char_detail = Character.objects.get(eve_character=app.eve_character)
             char_detail.member = member
             char_detail.save()
 
-            app.status = app.STATUS_ACCEPT
-            app.closed = timezone.now()
+            app.status = Application.STATUS_PROCESSED
+            app.decision = Application.DECISION_ACCEPT
+            app.decision_on = timezone.now()
 
             # Title accepts have a few extra steps.
             if app.form.title:
                 # Is this a new title for main?
                 if (
                     app.form.title > member.awarded_title
-                    and app.character == app.main_character
+                    and app.eve_character == app.main_character
                 ):
                     member.awarded_title = app.form.title
                     member.save()
@@ -1069,8 +1083,15 @@ def hr_admin_approve_action(request, tokens, app_id):
 
             app.save()
             ApplicationAction.objects.create_action(
-                app, ApplicationAction.ACCEPT, request.user
+                app,
+                ApplicationAction.ACCEPT,
+                request.user.profile.main_character
+                if not is_override
+                else app.reviewer,
+                None,
+                request.user.profile.main_character if is_override else None,
             )
+
         notify(
             app.user,
             "Application Accepted",
@@ -1079,14 +1100,14 @@ def hr_admin_approve_action(request, tokens, app_id):
         )
 
         context = {
-            "character": app.character,
-            "character_evelink": f'<font size="12" color="#ffd98d00"><a href="showinfo:1376//{app.character.character_id}">{app.character}</a></font>',
+            "character": app.eve_character,
+            "character_evelink": f'<font size="12" color="#ffd98d00"><a href="showinfo:1376//{app.eve_character.character_id}">{app.eve_character.character_name}</a></font>',
             "main_character": app.main_character,
             "officer": request.user.profile.main_character,
-            "officer_evelink": f'<font size="12" color="#ffd98d00"><a href="showinfo:1376//{request.user.profile.main_character.character_id}">{request.user.profile.main_character}</a></font>',
+            "officer_evelink": f'<font size="12" color="#ffd98d00"><a href="showinfo:1376//{request.user.profile.main_character.character_id}">{request.user.profile.main_character.character_name}</a></font>',
         }
         token = tokens.require_valid().first()
-        recipients = [app.character.character_id]
+        recipients = [app.eve_character.character_id]
 
         open_newmail_window_from_template(
             recipients=recipients,
@@ -1101,11 +1122,23 @@ def hr_admin_approve_action(request, tokens, app_id):
             messages.SUCCESS,
             _("Application accepted. Check your EVE Client for accept mail window."),
         )
-    else:
-        logger.warn("User %s not authorized to approve %s.", request.user, app)
-        return HttpResponseForbidden
 
-    return redirect("membertools_admin:view", app.id)
+        return redirect("membertools_admin:queue")
+
+    context = {
+        "page_title": "Confirm Accept",
+        "message": _(
+            "Are you sure you wish to accept %(applicant)s's application to %(application)s?"
+            % {"applicant": app.eve_character.character_name, "application": app.form}
+        ),
+        "cancel_url": reverse("membertools_admin:view", args=[app_id]),
+    }
+
+    return render(
+        request,
+        "membertools_admin/confirmation.html",
+        hr_admin_add_shared_context(request, context),
+    )
 
 
 # Always allow reviewers to wait the applications they have under review.
