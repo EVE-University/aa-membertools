@@ -1337,6 +1337,7 @@ def hr_admin_close_action(request, tokens, app_id):
         logger.info("User %s closing %s.", request.user, app)
         with transaction.atomic():
             app.status = app.STATUS_CLOSED
+            app.save()
 
             ApplicationAction.objects.create_action(
                 app, ApplicationAction.CLOSE, request.user.profile.main_character
@@ -1353,7 +1354,7 @@ def hr_admin_close_action(request, tokens, app_id):
     context = {
         "page_title": "Confirm Close",
         "message": _(
-            "Are you sure you wish to close this application? This will remove any temporary permissions granted."
+            "Are you sure you wish to manually Close this application? This will remove any temporary permissions granted."
         ),
         "cancel_url": reverse("membertools_admin:view", args=[app_id]),
     }
