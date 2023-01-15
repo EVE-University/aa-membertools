@@ -1229,8 +1229,9 @@ def hr_admin_reject_action(request, tokens, app_id):
         app.form, request.user, "membertools.reject_application"
     )
     is_manager = is_form_manager(app.form, request.user)
+    is_override = request.user.profile.main_character != app.reviewer
 
-    if not is_recruiter:
+    if not is_recruiter and not is_manager:
         logger.warning(
             "User %s does not have permission to reject apps for %s.",
             request.user,
@@ -1238,14 +1239,29 @@ def hr_admin_reject_action(request, tokens, app_id):
         )
         return HttpResponseForbidden
 
-    if request.user == app.reviewer:
+    if is_override and not is_manager:
+        logger.warning(
+            "User %s does not have permission to override reject apps for %s.",
+            request.user,
+            app.form,
+        )
+        return HttpResponseForbidden
+
+    if request.method == "POST":
         logger.info(f"User {request.user} rejecting {app}")
         with transaction.atomic():
-            app.status = app.STATUS_REJECT
+            app.status = app.STATUS_PROCESSED
+            app.decision = app.DECISION_REJECT
             app.closed = timezone.now()
             app.save()
             ApplicationAction.objects.create_action(
-                app, ApplicationAction.REJECT, request.user
+                app,
+                ApplicationAction.REJECT,
+                request.user.profile.main_character
+                if not is_override
+                else app.reviewer,
+                None,
+                request.user.profile.main_character if is_override else None,
             )
         notify(
             app.user,
@@ -1255,14 +1271,14 @@ def hr_admin_reject_action(request, tokens, app_id):
         )
 
         context = {
-            "character": app.character,
-            "character_evelink": f'<font size="12" color="#ffd98d00"><a href="showinfo:1376//{app.character.character_id}">{app.character}</a></font>',
+            "character": app.eve_character,
+            "character_evelink": f'<font size="12" color="#ffd98d00"><a href="showinfo:1376//{app.eve_character.character_id}">{app.eve_character.character_name}</a></font>',
             "main_character": app.main_character,
             "officer": request.user.profile.main_character,
-            "officer_evelink": f'<font size="12" color="#ffd98d00"><a href="showinfo:1376//{request.user.profile.main_character.character_id}">{request.user.profile.main_character}</a></font>',
+            "officer_evelink": f'<font size="12" color="#ffd98d00"><a href="showinfo:1376//{request.user.profile.main_character.character_id}">{request.user.profile.main_character.character_name}</a></font>',
         }
         token = tokens.require_valid().first()
-        recipients = [app.character.character_id]
+        recipients = [app.eve_character.character_id]
 
         open_newmail_window_from_template(
             recipients=recipients,
@@ -1274,11 +1290,10 @@ def hr_admin_reject_action(request, tokens, app_id):
         messages.add_message(
             request,
             messages.SUCCESS,
-            _("Application rejected. Check your EVE Client for accept mail window."),
+            _("Application rejected. Check your EVE Client for reject mail window."),
         )
-    else:
-        logger.warning("User %s not authorized to reject %s", request.user, app)
-        return HttpResponseForbidden
+
+        return redirect("membertools_admin:queue")
 
     context = {
         "page_title": "Confirm Reject",
@@ -1291,7 +1306,63 @@ def hr_admin_reject_action(request, tokens, app_id):
         "membertools_admin/confirmation.html",
         hr_admin_add_shared_context(request, context),
     )
-    return redirect("membertools_admin:queue")
+
+
+@login_required
+@permission_required(
+    [
+        "membertools.admin_access",
+        "membertools.application_admin_access",
+        "membertools.view_application",
+        "membertools.manage_applications",
+    ]
+)
+@tokens_required(["esi-location.read_online.v1", "esi-ui.open_window.v1"])
+def hr_admin_close_action(request, tokens, app_id):
+    logger.debug(
+        "hr_admin_close_action called by user %s for app id %s", request.user, app_id
+    )
+    app = get_object_or_404(Application, pk=app_id)
+    is_manager = is_form_manager(app.form, request.user)
+
+    if not is_manager:
+        logger.warning(
+            "User %s does not have permission to close apps for %s.",
+            request.user,
+            app.form,
+        )
+        return HttpResponseForbidden
+
+    if request.method == "POST":
+        logger.info("User %s closing %s.", request.user, app)
+        with transaction.atomic():
+            app.status = app.STATUS_CLOSED
+
+            ApplicationAction.objects.create_action(
+                app, ApplicationAction.CLOSE, request.user.profile.main_character
+            )
+
+        messages.add_message(
+            request,
+            messages.SUCCESS,
+            _("Application closed successfully."),
+        )
+
+        return redirect("membertools_admin:view", app.id)
+
+    context = {
+        "page_title": "Confirm Close",
+        "message": _(
+            "Are you sure you wish to close this application? This will remove any temporary permissions granted."
+        ),
+        "cancel_url": reverse("membertools_admin:view", args=[app_id]),
+    }
+
+    return render(
+        request,
+        "membertools_admin/confirmation.html",
+        hr_admin_add_shared_context(request, context),
+    )
 
 
 # Comment functions
