@@ -3,7 +3,7 @@ import unicodedata
 from datetime import timedelta
 
 from django.contrib.auth.models import User, Group
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.apps import apps
 from django.db import models
 from django.db.models import Q
@@ -371,22 +371,120 @@ class Application(models.Model):
     objects = ApplicationManager()
 
     # TODO: Update clean for new schema
-    # def clean(self):
-    #     # Some logic to keep state more consistent when being edited via admin
-    #     if (
-    #         self.status != Application.STATUS_ACCEPT
-    #         and self.status != Application.STATUS_REJECT
-    #     ):
-    #         self.closed = None
-    #     if self.status == Application.STATUS_NEW:
-    #         self.reviewer = None
-    #         self.last_status = Application.STATUS_NEW
-    #     elif (
-    #         self.status == Application.STATUS_ACCEPT
-    #         or self.status == Application.STATUS_REJECT
-    #     ):
-    #         if not self.closed:
-    #             self.closed = timezone.now()
+    def clean(self):
+        old_instance = Application.objects.filter(pk=self.pk)
+        errors = {}
+
+        # raise ValidationError(
+        #     {"status": ValidationError("Status incorrect.", code="invalid")}
+        # )
+        # Some logic to keep state more consistent when being edited via admin
+
+        # Status
+        if (
+            self.status != Application.STATUS_CLOSED
+            and self.decision != Application.DECISION_PENDING
+        ):
+            errors["status"] = ValidationError(
+                "Status must be Closed when Decision isn't Pending.", code="invalid"
+            )
+
+        if self.status == Application.STATUS_REVIEW and self.reviewer is None:
+            errors["reviewer"] = ValidationError(
+                "Must have a Reviewer with Status Under Review.", code="invalid"
+            )
+
+        # Last Status
+        if self.last_status == Application.STATUS_CLOSED:
+            errors["last_status"] = ValidationError(
+                "Last status cannot be Closed.", code="invalid"
+            )
+        elif self.last_status == Application.STATUS_REVIEW:
+            errors["last_status"] = ValidationError(
+                "Last status cannot be Under Review.", code="invalid"
+            )
+
+        # Decision
+        if (
+            self.decision != Application.DECISION_PENDING
+            and self.status != Application.STATUS_CLOSED
+        ):
+            errors["decision"] = ValidationError(
+                "Decision must be Pending when Status isn't Closed.", code="invalid"
+            )
+
+        # Decision By
+        if self.decision_by is not None and self.status != Application.STATUS_CLOSED:
+            errors["decision_by"] = ValidationError(
+                "Decision by must be empty when Status isn't Closed.", code="invalid"
+            )
+        elif self.decision_by is None and self.decision != Application.DECISION_PENDING:
+            errors["decision_by"] = ValidationError(
+                "Decision by may not be empty when Decision isn't Pending.",
+                code="invalid",
+            )
+
+        # Reviewer
+        if self.reviewer is not None and self.status == Application.STATUS_NEW:
+            errors["reviewer"] = ValidationError(
+                "Reviewer cannot be set if Status is New", code="invalid"
+            )
+        elif self.reviewer is None and self.decision != Application.DECISION_PENDING:
+            errors["reviewer"] = ValidationError(
+                "Reviewer cannot be empty if Decision is not Pending", code="invalid"
+            )
+
+        # if self.status != Application.STATUS_
+
+        # if self.status == Application.STATUS_NEW:
+        #     self.reviewer = None
+
+        # if (
+        #     self.status != Application.STATUS_ACCEPT
+        #     and self.status != Application.STATUS_REJECT
+        # ):
+        #     self.closed = None
+        # if self.status == Application.STATUS_NEW:
+        #     self.reviewer = None
+        #     self.last_status = Application.STATUS_NEW
+        # elif (
+        #     self.status == Application.STATUS_ACCEPT
+        #     or self.status == Application.STATUS_REJECT
+        # ):
+        #     if not self.closed:
+        #         self.closed = timezone.now()
+
+        if len(errors):
+            raise ValidationError(errors)
+
+    # Handle some automated field changes
+    def save(self, *args, **kwargs):
+        if self.pk:
+            old_instance = Application.objects.get(pk=self.pk)
+        else:
+            old_instance = None
+
+        # Empty read only decision on if status is CLOSED
+        if self.status != Application.STATUS_CLOSED:
+            self.decision_on = None
+
+        # Last status must always be NEW when Status is NEW
+        if self.status == Application.STATUS_NEW:
+            self.last_status = Application.STATUS_NEW
+
+        if old_instance:
+            if old_instance.status != self.status:
+                self.status_on = timezone.now()
+
+            if (
+                old_instance.decision == Application.DECISION_PENDING
+                and self.decision != Application.DECISION_PENDING
+            ):
+                self.decision_on = timezone.now()
+            elif self.decision == Application.DECISION_PENDING:
+                self.decision_on = None
+
+        super(Application, self).save(*args, **kwargs)
 
     def __str__(self):
         formatted = date_format(
