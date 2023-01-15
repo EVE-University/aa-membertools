@@ -1,0 +1,26 @@
+{% load i18n %}
+<table class="table">
+    <tr>
+        <th class="text-center hidden-xs">{% translate "Main Character" %}</th>
+        <th class="text-center">{% translate "Applying Character" %}</th>
+        <th class="text-center">{% translate "Submitted" %}</th>
+        <th class="text-center">{% translate "Last Activity" %}</th>
+        <th class="text-center">{% translate "Closed" %}</th>
+        <th class="text-center">{% translate "Reviewer" %}</th>
+        <th class="text-center">{% translate "Decision By" %}</th>
+        <th class="text-center">{% translate "Status" %}</th>
+        <th class="text-center">{% translate "Decision" %}</th>
+
+    </tr>
+    <tr>
+        <td class="text-center hidden-xs">{{ application.main_character.character_name }}</td>
+        <td class="text-center">{{ application.eve_character.character_name }}</td>
+        <td class="text-center">{{ application.submitted_on }}</td>
+        <td class="text-center">{{ application.status_on }}</td>
+        <td class="text-center">{% if application.closed_on %}{{ application.closed_on }}{% else %}-{% endif %}</td>
+        <td class="text-center">{% if application.reviewer %}{{ application.reviewer.character_name }}{% else %}-{% endif %}</td>
+        <td class="text-center">{% if application.decision_by %}{{ application.decision_by.character_name }}{% else %}-{% endif %}</td>
+        <td class="text-center">{{ application.get_status_display }}</td>
+        <td class="text-center">{{ application.get_decision_display }}</td>
+    </tr>
+</table>
