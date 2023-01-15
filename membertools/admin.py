@@ -70,7 +70,12 @@ class ApplicationAdmin(admin.ModelAdmin):
         "status_on",
         "reviewer",
     )
-    readonly_fields = ("submitted_on", "status_on", "closed_on")
+    readonly_fields = (
+        "submitted_on",
+        "status_on",
+        "decision_on",
+        "closed_on",
+    )
     ordering = ["-submitted_on"]
     search_fields = [
         "character__character_name",
