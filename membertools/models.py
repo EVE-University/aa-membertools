@@ -375,13 +375,7 @@ class Application(models.Model):
 
     # TODO: Update clean for new schema
     def clean(self):
-        old_instance = Application.objects.filter(pk=self.pk)
         errors = {}
-
-        # raise ValidationError(
-        #     {"status": ValidationError("Status incorrect.", code="invalid")}
-        # )
-        # Some logic to keep state more consistent when being edited via admin
 
         # Status
         if (
@@ -393,8 +387,16 @@ class Application(models.Model):
             )
 
         if self.status == Application.STATUS_REVIEW and self.reviewer is None:
-            errors["reviewer"] = ValidationError(
-                "Must have a Reviewer with Status Under Review.", code="invalid"
+            errors["status"] = ValidationError(
+                "Status must not be Review without a reviewer.", code="invalid"
+            )
+
+        if (
+            self.status == Application.STATUS_CLOSED
+            and self.decision == Application.DECISION_PENDING
+        ):
+            errors["status"] = ValidationError(
+                "Status cannot be Closed without a Decision.", code="invalid"
             )
 
         # Last Status
@@ -437,26 +439,6 @@ class Application(models.Model):
                 "Reviewer cannot be empty if Decision is not Pending", code="invalid"
             )
 
-        # if self.status != Application.STATUS_
-
-        # if self.status == Application.STATUS_NEW:
-        #     self.reviewer = None
-
-        # if (
-        #     self.status != Application.STATUS_ACCEPT
-        #     and self.status != Application.STATUS_REJECT
-        # ):
-        #     self.closed = None
-        # if self.status == Application.STATUS_NEW:
-        #     self.reviewer = None
-        #     self.last_status = Application.STATUS_NEW
-        # elif (
-        #     self.status == Application.STATUS_ACCEPT
-        #     or self.status == Application.STATUS_REJECT
-        # ):
-        #     if not self.closed:
-        #         self.closed = timezone.now()
-
         if len(errors):
             raise ValidationError(errors)
 
@@ -478,6 +460,17 @@ class Application(models.Model):
         if old_instance:
             if old_instance.status != self.status:
                 self.status_on = timezone.now()
+
+                if (
+                    old_instance.status != Application.STATUS_CLOSED
+                    and self.status == Application.STATUS_CLOSED
+                ):
+                    self.closed_on = timezone.now()
+                elif (
+                    old_instance.status == Application.STATUS_CLOSED
+                    and self.status != Application.STATUS_CLOSED
+                ):
+                    self.closed_on = None
 
             if (
                 old_instance.decision == Application.DECISION_PENDING
