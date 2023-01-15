@@ -292,11 +292,13 @@ class Application(models.Model):
     STATUS_NEW = 1
     STATUS_REVIEW = 2
     STATUS_WAIT = 3
-    STATUS_CLOSED = 4
+    STATUS_PROCESSED = 4
+    STATUS_CLOSED = 5
     STATUS_CHOICES = (
         (STATUS_NEW, _("New")),
         (STATUS_REVIEW, _("Under Review")),
         (STATUS_WAIT, _("Wait")),
+        (STATUS_PROCESSED, _("Processed")),
         (STATUS_CLOSED, _("Closed")),
     )
 
@@ -308,9 +310,10 @@ class Application(models.Model):
         STATUS_WAIT: _(
             "Your application has been reviewed and more information may be required. Check your EVE Mail for more information."
         ),
-        STATUS_CLOSED: _(
+        STATUS_PROCESSED: _(
             "Your application has been processed. Check your EVE Mail for more information."
         ),
+        STATUS_CLOSED: _("This application is closed and has been archived."),
     }
 
     # No decision has been made
@@ -566,12 +569,14 @@ class ApplicationAction(models.Model):
     REJECT = 3
     WAIT = 4
     RELEASE = 5
+    CLOSE = 6
     ACTION_CHOICES = (
         (REVIEW, _("Start Review")),
         (ACCEPT, _("Accept")),
         (REJECT, _("Reject")),
         (WAIT, _("Wait")),
         (RELEASE, _("Release")),
+        (CLOSE, _("Close")),
     )
 
     ACTION_MESSAGE = {
@@ -580,6 +585,7 @@ class ApplicationAction(models.Model):
         REJECT: _("Reject application."),
         WAIT: _("Waiting for feedback/response."),
         RELEASE: _("Release ownership of application and return it to queue."),
+        CLOSE: _("Close application and remove temporary membership state."),
     }
 
     application = models.ForeignKey(
