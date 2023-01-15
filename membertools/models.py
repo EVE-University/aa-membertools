@@ -373,55 +373,78 @@ class Application(models.Model):
 
     objects = ApplicationManager()
 
-    # TODO: Update clean for new schema
     def clean(self):
         errors = {}
 
         # Status
         if (
-            self.status != Application.STATUS_CLOSED
+            self.status not in [Application.STATUS_PROCESSED, Application.STATUS_CLOSED]
             and self.decision != Application.DECISION_PENDING
         ):
             errors["status"] = ValidationError(
-                "Status must be Closed when Decision isn't Pending.", code="invalid"
-            )
-
-        if self.status == Application.STATUS_REVIEW and self.reviewer is None:
-            errors["status"] = ValidationError(
-                "Status must not be Review without a reviewer.", code="invalid"
+                f"Status {self.get_status_display()} is not valid when Decision isn't Pending.",
+                code="invalid",
             )
 
         if (
-            self.status == Application.STATUS_CLOSED
+            self.status
+            in [
+                Application.STATUS_REVIEW,
+                Application.STATUS_PROCESSED,
+                Application.STATUS_CLOSED,
+            ]
+            and self.reviewer is None
+        ):
+            errors["status"] = ValidationError(
+                f"Status must not be {self.get_status_display()} without a reviewer.",
+                code="invalid",
+            )
+
+        if (
+            self.status not in [Application.STATUS_PROCESSED, Application.STATUS_CLOSED]
             and self.decision == Application.DECISION_PENDING
         ):
             errors["status"] = ValidationError(
-                "Status cannot be Closed without a Decision.", code="invalid"
+                f"Status cannot be {self.get_status_display()} without a Decision.",
+                code="invalid",
             )
 
         # Last Status
-        if self.last_status == Application.STATUS_CLOSED:
+        if self.last_status in [
+            Application.STATUS_REVIEW,
+            Application.STATUS_PROCESSED,
+            Application.STATUS_CLOSED,
+        ]:
             errors["last_status"] = ValidationError(
-                "Last status cannot be Closed.", code="invalid"
-            )
-        elif self.last_status == Application.STATUS_REVIEW:
-            errors["last_status"] = ValidationError(
-                "Last status cannot be Under Review.", code="invalid"
+                f"Last status cannot be {self.get_status_display()}.", code="invalid"
             )
 
         # Decision
-        if (
-            self.decision != Application.DECISION_PENDING
-            and self.status != Application.STATUS_CLOSED
-        ):
+        if self.decision == Application.DECISION_PENDING and self.status in [
+            Application.STATUS_PROCESSED,
+            Application.STATUS_CLOSED,
+        ]:
             errors["decision"] = ValidationError(
-                "Decision must be Pending when Status isn't Closed.", code="invalid"
+                f"Decision cannot be Pending when Status is {self.get_status_display()}.",
+                code="invalid",
+            )
+        elif self.decision != Application.DECISION_PENDING and self.status not in [
+            Application.STATUS_PROCESSED,
+            Application.STATUS_CLOSED,
+        ]:
+            errors["decision"] = ValidationError(
+                "Decision must be Pending when Status isn't Processed/Closed.",
+                code="invalid",
             )
 
         # Decision By
-        if self.decision_by is not None and self.status != Application.STATUS_CLOSED:
+        if self.decision_by is not None and self.status not in [
+            Application.STATUS_PROCESSED,
+            Application.STATUS_CLOSED,
+        ]:
             errors["decision_by"] = ValidationError(
-                "Decision by must be empty when Status isn't Closed.", code="invalid"
+                "Decision by must be empty when Status isn't Processed/Closed.",
+                code="invalid",
             )
         elif self.decision_by is None and self.decision != Application.DECISION_PENDING:
             errors["decision_by"] = ValidationError(
@@ -449,8 +472,8 @@ class Application(models.Model):
         else:
             old_instance = None
 
-        # Empty read only decision on if status is CLOSED
-        if self.status != Application.STATUS_CLOSED:
+        # Empty read only decision on if status isn't PROCESSED or CLOSED
+        if self.status not in [Application.STATUS_PROCESSED, Application.STATUS_CLOSED]:
             self.decision_on = None
 
         # Last status must always be NEW when Status is NEW
