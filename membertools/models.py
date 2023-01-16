@@ -402,7 +402,7 @@ class Application(models.Model):
 
         if (
             self.status not in [Application.STATUS_PROCESSED, Application.STATUS_CLOSED]
-            and self.decision == Application.DECISION_PENDING
+            and self.decision != Application.DECISION_PENDING
         ):
             errors["status"] = ValidationError(
                 f"Status cannot be {self.get_status_display()} without a Decision.",
