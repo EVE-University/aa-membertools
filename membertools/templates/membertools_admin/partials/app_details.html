@@ -1,26 +1,53 @@
 {% load i18n %}
-<table class="table">
-    <tr>
-        <th class="text-center hidden-xs">{% translate "Main Character" %}</th>
-        <th class="text-center">{% translate "Applying Character" %}</th>
-        <th class="text-center">{% translate "Submitted" %}</th>
-        <th class="text-center">{% translate "Last Activity" %}</th>
-        <th class="text-center">{% translate "Closed" %}</th>
-        <th class="text-center">{% translate "Reviewer" %}</th>
-        <th class="text-center">{% translate "Decision By" %}</th>
-        <th class="text-center">{% translate "Status" %}</th>
-        <th class="text-center">{% translate "Decision" %}</th>
-
-    </tr>
-    <tr>
-        <td class="text-center hidden-xs">{{ application.main_character.character_name }}</td>
-        <td class="text-center">{{ application.eve_character.character_name }}</td>
-        <td class="text-center">{{ application.submitted_on }}</td>
-        <td class="text-center">{{ application.status_on }}</td>
-        <td class="text-center">{% if application.closed_on %}{{ application.closed_on }}{% else %}-{% endif %}</td>
-        <td class="text-center">{% if application.reviewer %}{{ application.reviewer.character_name }}{% else %}-{% endif %}</td>
-        <td class="text-center">{% if application.decision_by %}{{ application.decision_by.character_name }}{% else %}-{% endif %}</td>
-        <td class="text-center">{{ application.get_status_display }}</td>
-        <td class="text-center">{{ application.get_decision_display }}</td>
-    </tr>
-</table>
+<div class="details-flex">
+    <div class="details-info">
+        <div class="row">
+            <div class="col-lg-6">
+                <dl class="dl-horizontal">
+                    <dt>{% translate "Applying Character" %}:</dt>
+                    <dd class="nowrap">{{ application.eve_character.character_name }}</dd>
+                    <dt>{% translate "Status" %}:</dt>
+                    <dd class="nowrap">
+                        {% if application.status == application.STATUS_NEW or application.status == application.STATUS_REVIEW or application.status == application.STATUS_REVIEW %}
+                        <span class="label label-info">{{ application.get_status_display }}</span>
+                        {% elif application.status == application.STATUS_WAIT %}
+                        <span class="label label-warning">{{ application.get_status_display }}</span>
+                        {% elif application.status == application.STATUS_PROCESSED %}
+                        <span class="label label-primary">{{ application.get_status_display }}</span>
+                        {% else %}
+                        {{ application.get_status_display }}
+                        {% endif %}
+                    </dd>
+                    <dt>{% translate "Decision" %}:</dt>
+                    <dd class="nowrap">
+                        {% if application.decision == application.DECISION_ACCEPT %}
+                        <span class="label label-success">{{ application.get_decision_display }}</span>
+                        {% elif application.decision == application.DECISION_REJECT %}
+                        <span class="label label-danger">{{ application.get_decision_display }}</span>
+                        {% else %}
+                        <span class="label label-primary">{{ application.get_decision_display }}</span>
+                        {% endif %}
+                    </dd>
+                    <dt>{% translate "Review By" %}:</dt>
+                    <dd class="nowrap">{% if application.reviewer %}{{ application.reviewer.character_name }}{% else %}-{% endif %}</dd>
+                    <dt>{% translate "Decision By" %}:</dt>
+                    <dd class="nowrap">{% if application.decision_by %}{{ application.decision_by.character_name }}{% else %}-{% endif %}</dd>
+                </dl>
+            </div>
+            <div class="col-lg-6">
+                <dl class="dl-horizontal">
+                    <dt>{% translate "Main Character" %}:</dt>
+                    <dd class="nowrap">{% if application.main_character.next_character %}<a href="{% url 'membertools_admin:char_detail_view' application.main_character.next_character.id %}">{% endif %}{{ application.main_character.character_name }}{% if application.main_character.next_character %}</a>{% endif %}</dd>
+                    <dt>{% translate "Submitted On" %}:</dt>
+                    <dd class="nowrap">{{ application.submitted_on }}</dd>
+                    <dt>{% translate "Status On" %}:</dt>
+                    <dd class="nowrap">{% if application.status_on %}{{ application.status_on }}{% else %}-{% endif %}</dd>
+                    <dt>{% translate "Decision On" %}:</dt>
+                    <dd class="nowrap">{% if application.decision_on %}{{ application.decision_on }}{% else %}-{% endif %}</dd>
+                    <dt>{% translate "Closed On" %}:</dt>
+                    <dd class="nowrap">{% if application.closed_on %}{{ application.closed_on }}{% else %}-{% endif %}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
