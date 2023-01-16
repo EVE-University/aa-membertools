@@ -149,6 +149,7 @@ def update_character(self, character_id, force=False):
     except Exception as ex:
         update_status.status = CharacterUpdateStatus.STATUS_ERROR
         logger.error("%s: %s", type(ex).__name__, ex)
+        raise ex
 
     update_status.task_id = None
     update_status.save()

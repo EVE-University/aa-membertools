@@ -131,66 +131,62 @@ class Check:
         messages = []
         failed = 0
 
+        print("_do_check_memberaudit")
+
         # Using exceptions to break out of code block when further checks aren't possible to flatten method.
-        try:
-            if not apps.is_installed("memberaudit"):
-                status = self.CHECK_DISABLED
-                reason = _("Member Audit is not installed or enabled")
-                messages.append({"message": reason, "status": self.CHECK_FAILED})
+        if not apps.is_installed("memberaudit"):
+            status = self.CHECK_DISABLED
+            reason = _("Member Audit is not installed or enabled")
+            messages.append({"message": reason, "status": self.CHECK_FAILED})
 
-                raise Exception
+            raise Exception
 
-            Character = apps.get_model("memberaudit", "Character")
+        Character = apps.get_model("memberaudit", "Character")
 
-            query = Character.objects.filter(
-                character_ownership__character=self.character
+        query = Character.objects.filter(eve_character=self.character)
+
+        if query.exists():
+            char = query.get()
+            messages.append(
+                {
+                    "message": _("Character is registered"),
+                    "status": self.CHECK_PASSED,
+                }
             )
+        else:
+            char = None
+            status = self.CHECK_FAILED
+            reason = _(
+                "Character is not registered, please add this character in Member Audit"
+            )
+            failed += 1
+            messages.append({"message": reason, "status": self.CHECK_FAILED})
 
-            if query.exists():
-                char = query.get()
-                messages.append(
-                    {
-                        "message": _("Character is registered"),
-                        "status": self.CHECK_PASSED,
-                    }
-                )
-            else:
-                char = None
-                status = self.CHECK_FAILED
-                reason = _(
-                    "Character is not registered, please add this character in Member Audit"
-                )
-                failed += 1
-                messages.append({"message": reason, "status": self.CHECK_FAILED})
-                raise Exception
+        if char is not None and char.is_update_status_ok():
+            messages.append(
+                {
+                    "message": _("Character ESI token is valid"),
+                    "status": self.CHECK_PASSED,
+                }
+            )
+        else:
+            status = self.CHECK_FAILED
+            reason = _("Invalid ESI token, please delete and re-register character")
+            failed += 1
+            messages.append({"message": reason, "status": self.CHECK_FAILED})
 
-            if char.is_update_status_ok():
-                messages.append(
-                    {
-                        "message": _("Character ESI token is valid"),
-                        "status": self.CHECK_PASSED,
-                    }
-                )
-            else:
-                status = self.CHECK_FAILED
-                reason = _("Invalid ESI token, please delete and re-register character")
-                failed += 1
-                messages.append({"message": reason, "status": self.CHECK_FAILED})
-
-            if char.is_shared:
-                messages.append(
-                    {
-                        "message": _("Character details are shared with recruiters"),
-                        "status": self.CHECK_PASSED,
-                    }
-                )
-            else:
-                status = self.CHECK_FAILED
-                reason = _("Character details need to be shared with recruiters")
-                failed += 1
-                messages.append({"message": reason, "status": self.CHECK_FAILED})
-        except Exception:
-            pass  # We don't need to act on exceptions
+        if char is not None and char.is_shared:
+            messages.append(
+                {
+                    "message": _("Character details are shared with recruiters"),
+                    "status": self.CHECK_PASSED,
+                }
+            )
+        else:
+            status = self.CHECK_FAILED
+            reason = _("Character details need to be shared with recruiters")
+            failed += 1
+            messages.append({"message": reason, "status": self.CHECK_FAILED})
 
         if failed > 1:
             reason = _("Multiple checks failed")
