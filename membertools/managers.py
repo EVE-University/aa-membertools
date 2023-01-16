@@ -120,8 +120,8 @@ class MemberManager(models.Manager):
 
 
 class CharacterManager(models.Manager):
-    def update_for_char(self, character, eve_character):
-        description = character.get("description", "")
+    def update_for_char(self, character, esi_details):
+        description = esi_details.get("description", "")
 
         # ESI returns a python u string literal if the description contains a non-ascii character.
         # See: https://github.com/esi/esi-issues/issues/1265
@@ -134,29 +134,29 @@ class CharacterManager(models.Manager):
             except SyntaxError:
                 logger.warning(
                     "Invalid syntax from u-bug fix in description of %s [%s].",
-                    character.character_name,
-                    character.character_id,
+                    character.eve_character.character_name,
+                    character.eve_character.character_id,
                 )
                 description = ""
 
         try:
             corporation = EveCorporationInfo.objects.get(
-                corporation_id=character.get("corporation_id")
+                corporation_id=esi_details.get("corporation_id")
             )
         except EveCorporationInfo.DoesNotExist:
             corporation = EveCorporationInfo.objects.create_corporation(
-                character.get("corporation_id")
+                esi_details.get("corporation_id")
             )
 
         self.update_or_create(
-            character=eve_character.character,
+            eve_character=character.eve_character,
             defaults={
                 "corporation": corporation,
                 "alliance": corporation.alliance,
-                "birthday": character.get("birthday"),
+                "birthday": esi_details.get("birthday"),
                 "description": description,
-                "security_status": character.get("security_status"),
-                "title": character.get("title", ""),
+                "security_status": esi_details.get("security_status"),
+                "title": esi_details.get("title", ""),
             },
         )
 
@@ -187,15 +187,17 @@ class CharacterCorpHistoryManager(models.Manager):
                 )
             )
 
+        if not len(corps):
+            logger.info("%s: No corporation history?", character)
+
+            return
+
         corps[-1].is_last = True
 
         with transaction.atomic():
             self.filter(character=character).delete()
 
-            if corps:
-                logger.info(
-                    "%s: Adding %s entries for corp history.", character, len(corps)
-                )
-                self.bulk_create(corps)
-            else:
-                logger.info("%s: No corporation history?", character)
+            logger.info(
+                "%s: Adding %s entries for corp history.", character, len(corps)
+            )
+            self.bulk_create(corps)

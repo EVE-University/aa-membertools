@@ -726,8 +726,8 @@ class Member(models.Model):
             return False
 
         history = esi.client.Character.get_characters_character_id_corporationhistory(
-            character_id=self.character.character_id
-        )
+            character_id=self.main_character.character_id
+        ).results()
 
         history.reverse()
 
@@ -746,9 +746,10 @@ class Member(models.Model):
 
         logger.debug("F: %s L: %s", first_join, last_join)
 
-        self.first_joined = first_join
-        self.last_joined = last_join
-        self.save()
+        if len(history):
+            self.first_joined = first_join
+            self.last_joined = last_join
+            self.save()
 
         logger.debug("MF: %s ML: %s", self.first_joined, self.last_joined)
 
