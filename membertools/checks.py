@@ -134,62 +134,61 @@ class Check:
         print("_do_check_memberaudit")
 
         # Using exceptions to break out of code block when further checks aren't possible to flatten method.
-        if not apps.is_installed("memberaudit"):
+        if apps.is_installed("memberaudit"):
+            Character = apps.get_model("memberaudit", "Character")
+
+            query = Character.objects.filter(eve_character=self.character)
+
+            if query.exists():
+                char = query.get()
+                messages.append(
+                    {
+                        "message": _("Character is registered"),
+                        "status": self.CHECK_PASSED,
+                    }
+                )
+            else:
+                char = None
+                status = self.CHECK_FAILED
+                reason = _(
+                    "Character is not registered, please add this character in Member Audit"
+                )
+                failed += 1
+                messages.append({"message": reason, "status": self.CHECK_FAILED})
+
+            if char is not None and char.is_update_status_ok():
+                messages.append(
+                    {
+                        "message": _("Character ESI token is valid"),
+                        "status": self.CHECK_PASSED,
+                    }
+                )
+            else:
+                status = self.CHECK_FAILED
+                reason = _("Invalid ESI token, please delete and re-register character")
+                failed += 1
+                messages.append({"message": reason, "status": self.CHECK_FAILED})
+
+            if char is not None and char.is_shared:
+                messages.append(
+                    {
+                        "message": _("Character details are shared with recruiters"),
+                        "status": self.CHECK_PASSED,
+                    }
+                )
+            else:
+                status = self.CHECK_FAILED
+                reason = _("Character details need to be shared with recruiters")
+                failed += 1
+                messages.append({"message": reason, "status": self.CHECK_FAILED})
+
+            if failed > 1:
+                reason = _("Multiple checks failed")
+
+        else:
             status = self.CHECK_DISABLED
             reason = _("Member Audit is not installed or enabled")
             messages.append({"message": reason, "status": self.CHECK_FAILED})
-
-            raise Exception
-
-        Character = apps.get_model("memberaudit", "Character")
-
-        query = Character.objects.filter(eve_character=self.character)
-
-        if query.exists():
-            char = query.get()
-            messages.append(
-                {
-                    "message": _("Character is registered"),
-                    "status": self.CHECK_PASSED,
-                }
-            )
-        else:
-            char = None
-            status = self.CHECK_FAILED
-            reason = _(
-                "Character is not registered, please add this character in Member Audit"
-            )
-            failed += 1
-            messages.append({"message": reason, "status": self.CHECK_FAILED})
-
-        if char is not None and char.is_update_status_ok():
-            messages.append(
-                {
-                    "message": _("Character ESI token is valid"),
-                    "status": self.CHECK_PASSED,
-                }
-            )
-        else:
-            status = self.CHECK_FAILED
-            reason = _("Invalid ESI token, please delete and re-register character")
-            failed += 1
-            messages.append({"message": reason, "status": self.CHECK_FAILED})
-
-        if char is not None and char.is_shared:
-            messages.append(
-                {
-                    "message": _("Character details are shared with recruiters"),
-                    "status": self.CHECK_PASSED,
-                }
-            )
-        else:
-            status = self.CHECK_FAILED
-            reason = _("Character details need to be shared with recruiters")
-            failed += 1
-            messages.append({"message": reason, "status": self.CHECK_FAILED})
-
-        if failed > 1:
-            reason = _("Multiple checks failed")
 
         self._check_cache["memberaudit"] = {
             "title": title,
@@ -203,24 +202,11 @@ class Check:
         title = _("Discord")
         status = self.CHECK_PASSED
         reason = _("All checks passed")
+        failed = 0
         messages = []
 
-        # Using exceptions to break out of code block when further checks aren't possible to flatten method.
-        try:
-            if not apps.is_installed("allianceauth.services.modules.discord"):
-                status = self.CHECK_DISABLED
-                messages.append(
-                    {
-                        "message": _("Discord service is not installed"),
-                        "status": self.CHECK_FAILED,
-                    }
-                )
-
-                raise Exception
-
-            DiscordUser = apps.get_model(
-                "allianceauth.services.modules.discord", "DiscordUser"
-            )
+        if apps.is_installed("allianceauth.services.modules.discord"):
+            DiscordUser = apps.get_model("discord", "DiscordUser")
 
             query = DiscordUser.objects.filter(user=self.user)
 
@@ -228,18 +214,18 @@ class Check:
                 discord = query.get()
                 messages.append(
                     {
-                        "message": _("Linked with Discord"),
+                        "message": _("Discord is linked"),
                         "status": self.CHECK_PASSED,
                     }
                 )
             else:
                 discord = None
                 status = self.CHECK_FAILED
-                reason = _("Not linked with Discord")
+                reason = _("Discord is not linked. Please link Discord in Services")
                 messages.append({"message": reason, "status": self.CHECK_FAILED})
-                raise Exception
+                failed += 1
 
-            if discord.activated:
+            if discord and discord.activated:
                 messages.append(
                     {
                         "message": _("Discord account is active"),
@@ -251,9 +237,20 @@ class Check:
                 reason = _(
                     "Discord account is not active, please reset Discord link in Services"
                 )
+                failed += 1
                 messages.append({"message": reason, "status": self.CHECK_FAILED})
-        except Exception:
-            pass  # We don't need to act on exceptions
+
+            if failed > 1:
+                reason = _("Multiple checks failed")
+        else:
+            status = self.CHECK_DISABLED
+            reason = _("Discord service is not installed or enabled")
+            messages.append(
+                {
+                    "message": reason,
+                    "status": self.CHECK_FAILED,
+                }
+            )
 
         self._check_cache["discord"] = {
             "title": title,
@@ -270,15 +267,7 @@ class Check:
         reason = _("All checks passed")
         messages = []
 
-        # Using exceptions to break out of code block when further checks aren't possible to flatten method.
-        try:
-            if not apps.is_installed("allianceauth.services.modules.mumble"):
-                status = self.CHECK_DISABLED
-                reason = _("Mumble service is not enabled")
-                messages.append({"message": reason, "status": self.CHECK_FAILED})
-
-                raise Exception
-
+        if apps.is_installed("allianceauth.services.modules.mumble"):
             MumbleUser = apps.get_model(
                 "allianceauth.services.modules.mumble", "MumbleUser"
             )
@@ -298,9 +287,10 @@ class Check:
                     "Mumble account is not active, please reset account in Services"
                 )
                 messages.append({"message": reason, "status": self.CHECK_FAILED})
-                raise Exception
-        except Exception:
-            pass  # We don't need to act on exceptions
+        else:
+            status = self.CHECK_DISABLED
+            reason = _("Mumble service is not enabled")
+            messages.append({"message": reason, "status": self.CHECK_FAILED})
 
         self._check_cache["mumble"] = {
             "title": title,
@@ -309,23 +299,13 @@ class Check:
             "messages": messages,
         }
 
-        # pylint: disable=import-error,import-outside-toplevel,broad-except
-
     def _do_check_phpbb3(self):
         title = _("PhpBB3")
         status = self.CHECK_PASSED
         reason = _("All checks passed")
         messages = []
 
-        # Using exceptions to break out of code block when further checks aren't possible to flatten method.
-        try:
-            if not apps.is_installed("allianceauth.services.modules.phpbb3"):
-                status = self.CHECK_DISABLED
-                reason = _("PhpBB3 service is not enabled")
-                messages.append({"message": reason, "status": self.CHECK_FAILED})
-
-                raise Exception
-
+        if apps.is_installed("allianceauth.services.modules.phpbb3"):
             Phpbb3User = apps.get_model(
                 "allianceauth.services.modules.phpbb3", "Phpbb3User"
             )
@@ -345,8 +325,10 @@ class Check:
                     "PhpBB3 (Forum) account is not active, please reset account in Services"
                 )
                 messages.append({"message": reason, "status": self.CHECK_FAILED})
-        except Exception:
-            pass  # We don't need to act on exceptions
+        else:
+            status = self.CHECK_DISABLED
+            reason = _("PhpBB3 service is not enabled")
+            messages.append({"message": reason, "status": self.CHECK_FAILED})
 
         self._check_cache["phpbb3"] = {
             "title": title,
