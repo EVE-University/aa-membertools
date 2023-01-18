@@ -788,7 +788,18 @@ class Character(models.Model):
         EveCorporationInfo, on_delete=models.PROTECT, null=True, related_name="+"
     )
     alliance = models.ForeignKey(
-        EveAllianceInfo, on_delete=models.PROTECT, null=True, related_name="+"
+        EveAllianceInfo,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    faction = models.ForeignKey(
+        EveFactionInfo,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="+",
     )
     description = models.TextField(null=True)
     security_status = models.FloatField(default=None, null=True)
@@ -991,6 +1002,7 @@ class CharacterUpdateStatus(models.Model):
     )
     status = models.PositiveSmallIntegerField(choices=STATUS_CHOICES)
     updated_on = models.DateTimeField(null=True, default=timezone.now)
+    last_modified_on = models.DateTimeField(null=True)
     expires_on = models.DateTimeField(null=True)
     task_id = models.UUIDField(null=True)
 
