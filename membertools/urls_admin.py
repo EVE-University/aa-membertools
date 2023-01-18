@@ -48,6 +48,11 @@ urlpatterns = [
     path(
         "action/reject/<int:app_id>", views.hr_admin_reject_action, name="action_reject"
     ),
+    path(
+        "action/withdraw/<int:app_id>",
+        views.hr_admin_withdraw_action,
+        name="action_withdraw",
+    ),
     path("action/close/<int:app_id>", views.hr_admin_close_action, name="action_close"),
     path(
         "action/start_review/<int:app_id>",

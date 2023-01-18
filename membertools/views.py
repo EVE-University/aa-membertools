@@ -1321,6 +1321,86 @@ def hr_admin_reject_action(request, tokens, app_id):
         "membertools.admin_access",
         "membertools.application_admin_access",
         "membertools.view_application",
+        "membertools.review_application",
+    ]
+)
+def hr_admin_withdraw_action(request, app_id):
+    logger.debug(
+        "hr_admin_withdraw_action called by user %s for app id %s", request.user, app_id
+    )
+    app = get_object_or_404(Application, pk=app_id)
+    is_recruiter = is_form_recruiter(app.form, request.user)
+    is_manager = is_form_manager(app.form, request.user)
+    is_override = request.user.profile.main_character != app.reviewer
+
+    if not is_recruiter:
+        logger.warning(
+            "User %s does not have permission to withdraw apps for %s.",
+            request.user,
+            app.form,
+        )
+        return HttpResponseForbidden
+
+    if is_override and not is_manager:
+        logger.warning(
+            "User %s does not have permission to override withdraw apps for %s.",
+            request.user,
+            app.form,
+        )
+        return HttpResponseForbidden
+
+    if request.method == "POST":
+        logger.info("User %s withdrawing %s.", request.user, app)
+        with transaction.atomic():
+            app.decision = app.DECISION_WITHDRAW
+            app.status = app.STATUS_CLOSED
+            app.decision_by = request.user.profile.main_character
+            app.save()
+
+            ApplicationAction.objects.create_action(
+                app,
+                ApplicationAction.WITHDRAW,
+                app.reviewer,
+                None,
+                request.user.profile.main_character if is_override else None,
+            )
+            ApplicationAction.objects.create_action(
+                app,
+                ApplicationAction.CLOSE,
+                app.reviewer,
+                None,
+                request.user.profile.main_character if is_override else None,
+            )
+
+        messages.add_message(
+            request,
+            messages.SUCCESS,
+            _("Application withdrawn successfully."),
+        )
+
+        return redirect("membertools_admin:view", app.id)
+
+    context = {
+        "page_title": "Confirm Close",
+        "message": _(
+            "Are you sure you wish to Withdraw this application? Applicant will have to submit a new application."
+        ),
+        "cancel_url": reverse("membertools_admin:view", args=[app_id]),
+    }
+
+    return render(
+        request,
+        "membertools_admin/confirmation.html",
+        hr_admin_add_shared_context(request, context),
+    )
+
+
+@login_required
+@permission_required(
+    [
+        "membertools.admin_access",
+        "membertools.application_admin_access",
+        "membertools.view_application",
         "membertools.manage_applications",
     ]
 )

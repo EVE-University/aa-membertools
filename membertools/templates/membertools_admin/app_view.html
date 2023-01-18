@@ -66,9 +66,11 @@
             {% elif app.status == app.STATUS_REVIEW and app.reviewer.character_ownership.user == user or app.status == app.STATUS_REVIEW and is_manager %}
                 <a href="{% url 'membertools_admin:action_approve' app.id %}" class="btn btn-success" title="{% translate 'Accept this application' %}">{% translate "Accept" %}</a>
                 <a href="{% url 'membertools_admin:action_wait' app.id %}"
-                    class="btn btn-warning" title="{% translate 'Mark application as waiting for feedback or applicant response' %}">{% trans "Wait" %}</a>
+                    class="btn btn-primary" title="{% translate 'Mark application as waiting for feedback or applicant response' %}">{% trans "Wait" %}</a>
+                <a href="{% url 'membertools_admin:action_withdraw' app.id %}"
+                    class="btn btn-warning" title="{% translate 'Withdraw application, closing it' %}">{% trans "Withdraw" %}</a>
                 <a href="{% url 'membertools_admin:action_release' app.id %}"
-                    class="btn btn-primary" title="{% translate 'Release reviewer claim on this application and return it to its last queue' %}">{% trans "Release" %}</a>
+                    class="btn btn-info" title="{% translate 'Release reviewer claim on this application and return it to its last queue' %}">{% trans "Release" %}</a>
                 {% if perms.membertools.reject_application %}
                 <a href="{% url 'membertools_admin:action_reject' app.id %}" class="btn btn-danger" title="{% translate 'Reject this application' %}">{% translate "Reject" %}</a>
                 {% endif %}
