@@ -590,6 +590,8 @@ class ApplicationAction(models.Model):
     WAIT = 4
     RELEASE = 5
     CLOSE = 6
+    WITHDRAW = 7
+
     ACTION_CHOICES = (
         (REVIEW, _("Start Review")),
         (ACCEPT, _("Accept")),
@@ -597,6 +599,7 @@ class ApplicationAction(models.Model):
         (WAIT, _("Wait")),
         (RELEASE, _("Release")),
         (CLOSE, _("Close")),
+        (WITHDRAW, _("Withdraw")),
     )
 
     ACTION_MESSAGE = {
