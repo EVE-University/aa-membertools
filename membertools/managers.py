@@ -120,7 +120,7 @@ class MemberManager(models.Manager):
 
 
 class CharacterManager(models.Manager):
-    def update_for_char(self, character, esi_details):
+    def update_for_char(self, character, esi_details, last_modified=None, expires=None):
         description = esi_details.get("description", "")
 
         # ESI returns a python u string literal if the description contains a non-ascii character.

@@ -46,5 +46,6 @@ setup(
         "allianceauth-app-utils>=1.8.2",
         "humanize",
         "requests",
+        "python-dateutil",
     ],
 )

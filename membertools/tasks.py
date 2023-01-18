@@ -1,6 +1,8 @@
 import pprint
 
 from datetime import timedelta
+from dateutil import parser
+
 from celery import shared_task
 
 from bravado.exception import (
@@ -15,6 +17,7 @@ from django.http import HttpResponseNotFound
 from django.utils import timezone
 from pyparsing import Char
 
+from allianceauth.eveonline.providers import provider as aa_provider
 from allianceauth.services.hooks import get_extension_logger
 from allianceauth.services.tasks import QueueOnce
 
@@ -22,6 +25,7 @@ from esi.errors import DjangoEsiException
 from esi.models import Token
 
 from .models import Member, Character, CharacterUpdateStatus
+from .providers import esi
 
 logger = get_extension_logger(__name__)
 
@@ -68,7 +72,7 @@ def open_newmail_window(self, recipients, subject, body, token_id):
 
 
 @shared_task(**TASK_DEFAULT_KWARGS)
-def update_all_characters(force=False):
+def update_all_characters(force=True):
     if force:
         query = Member.objects.values_list("id", flat=True)
     else:
@@ -105,6 +109,43 @@ def update_member(self, member_id, force=False):
     return member.update_joined_dates()
 
 
+def _fetch_character_details(character_id):
+    op = esi.client.Character.get_characters_character_id(character_id=character_id)
+    op.request_config.also_return_response = True
+
+    details, res = op.result()
+    last_modified = parser.parse(res.headers.get("Last-Modified"))
+    expires = parser.parse(res.headers.get("Expires"))
+
+    character = aa_provider.get_character(character_id)
+
+    if details["corporation_id"] != character.corp_id:
+        details["corp_changed"] = True
+    details["corporation_id"] = character.corp_id
+    details["corporation"] = character.corp
+    if details["alliance_id"] != character.alliance_id:
+        details["alliance_changed"] = True
+    details["alliance_id"] = character.alliance_id
+    details["alliance"] = character.alliance
+    if details["faction_id"] != character.faction_id:
+        details["faction_changed"] = True
+    details["faction_id"] = character.faction_id
+    details["faction"] = character.faction
+
+    details["last_modified"] = last_modified
+    details["expires"] = expires
+
+    return details
+
+
+def _fetch_char_corp_history(character_id):
+    history = esi.client.Character.get_characters_character_id_corporationhistory(
+        character_id=character_id
+    ).results()
+
+    return history
+
+
 @shared_task(**{**TASK_ESI_KWARGS, **{"bind": True}})
 def update_character(self, character_id, force=False):
     logger.debug("Task update_character() called!")
@@ -114,9 +155,10 @@ def update_character(self, character_id, force=False):
         defaults={"character": character, "status": CharacterUpdateStatus.STATUS_OKAY},
     )
     logger.debug(
-        "Character %s last updated %s, expires %s. (Force: %s)",
+        "Character %s last updated %s, last modified %s, expires %s. (Force: %s)",
         character,
         update_status.updated_on,
+        update_status.last_modified_on,
         update_status.expires_on,
         force,
     )
@@ -133,12 +175,19 @@ def update_character(self, character_id, force=False):
     update_status.save()
 
     try:
-        character.update_character_details()
-        character.update_corporation_history()
+        details = _fetch_character_details(character.eve_character.character_id)
+        history = _fetch_char_corp_history(character.eve_character.character_id)
+
+        character.update_character_details(details)
+        character.update_corporation_history(history)
 
         update_status.status = CharacterUpdateStatus.STATUS_OKAY
         update_status.updated_on = timezone.now()
-        update_status.expires_on = timezone.now() + timedelta(hours=24)
+        update_status.last_modified_on = details.get("last_modified")
+        update_status.expires_on = details.get(
+            "expires", timezone.now() + timedelta(hours=24)
+        )
+
     except HTTPNotFound as ex:
         update_status.status = CharacterUpdateStatus.STATUS_ERROR
         logger.info("%s: %s", type(ex).__name__, ex)
