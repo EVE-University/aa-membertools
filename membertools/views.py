@@ -639,14 +639,21 @@ def hr_admin_char_detail_view(
 
     context = {
         "page_title": "View Character: {}".format(detail.eve_character),
-        "sub_title": "Last Updated: {}".format(
+        "sub_title": "Last Modified: {} \u2014 Expires: {}".format(
             date_format(
-                detail.update_status.updated_on,
+                detail.update_status.last_modified_on,
                 format="SHORT_DATETIME_FORMAT",
                 use_l10n=True,
             )
             if hasattr(detail, "update_status")
-            else "Never"
+            else "Never",
+            date_format(
+                detail.update_status.expires_on,
+                format="SHORT_DATETIME_FORMAT",
+                use_l10n=True,
+            )
+            if hasattr(detail, "update_status")
+            else "Never",
         ),
         "char_detail": detail,
         "corp_history": detail.corporation_history.order_by("-record_id").all(),
