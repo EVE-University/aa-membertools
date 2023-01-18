@@ -1,6 +1,8 @@
+import ast
 import unicodedata
 
 from datetime import timedelta
+from dateutil import parser
 
 from django.contrib.auth.models import User, Group
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
@@ -17,7 +19,9 @@ from django.utils.translation import gettext_lazy as _
 from sortedm2m.fields import SortedManyToManyField
 
 from allianceauth.authentication.models import CharacterOwnership
+from allianceauth.eveonline.providers import provider as aa_provider
 from allianceauth.eveonline.models import (
+    EveFactionInfo,
     EveAllianceInfo,
     EveCharacter,
     EveCorporationInfo,
@@ -923,36 +927,71 @@ class Character(models.Model):
     def __str__(self):
         return str(self.eve_character.character_name)
 
-    def update_character_details(self, force=False):
+    def update_character_details(self, details):
         logger.debug("update_character_details(): %s", self)
-        if (
-            not force
-            and self.update_status
-            and self.update_status.expires_on
-            and self.update_status.expires_on > timezone.now()
-        ):
-            return False
-        details = esi.client.Character.get_characters_character_id(
-            character_id=self.eve_character.character_id
-        ).results()
 
-        logger.debug("Updating details for %s.", details.get("name"))
-        Character.objects.update_for_char(self, details)
+        description = details.get("description", "")
+
+        # ESI returns a python u string literal if the description contains a non-ascii character.
+        # See: https://github.com/esi/esi-issues/issues/1265
+        # The XML filtering provided by CCP is NOT extensive and it is easily possible to inject
+        # arbitrary XML. This field should always be treated as unsafe without proper processing.
+
+        if description and description.startswith("u'") and description.endswith("'"):
+            try:
+                description = ast.literal_eval(description)
+            except SyntaxError:
+                logger.warning(
+                    "Invalid syntax from u-bug fix in description of %s [%s].",
+                    self.eve_character.character_name,
+                    self.eve_character.character_id,
+                )
+                description = ""
+
+        try:
+            self.corporation = EveCorporationInfo.objects.get(
+                corporation_id=details.get("corporation_id")
+            )
+        except EveCorporationInfo.DoesNotExist:
+            self.corporation = EveCorporationInfo.objects.create_corporation_obj(
+                details.get("corporation")
+            )
+
+        if details.get("alliance_id"):
+            try:
+                self.alliance = EveAllianceInfo.objects.get(
+                    alliance_id=details.get("alliance_id")
+                )
+            except EveAllianceInfo.DoesNotExist:
+                self.alliance = EveAllianceInfo.objects.create_corporation_obj(
+                    details.get("alliance")
+                )
+        else:
+            self.alliance = None
+
+        # For some reason there is no creation helper for EveFactionInfo
+        if details.get("faction_id"):
+            try:
+                self.faction = EveFactionInfo.objects.get(
+                    faction_id=details.get("faction_id")
+                )
+            except EveFactionInfo.DoesNotExist:
+                self.faction = EveFactionInfo.objects.create(
+                    faction_id=details.get("faction_id"),
+                    faction_name=details.get("faction").name,
+                )
+        else:
+            self.faction = None
+        self.birthday = details.get("birthday")
+        self.description = description
+        self.security_status = details.get("security_status")
+        self.title = details.get("title")
+        self.save()
+
         return True
 
-    def update_corporation_history(self, force=False):
+    def update_corporation_history(self, history):
         logger.debug("update_corporation_history(): %s", self)
-        if (
-            not force
-            and self.update_status
-            and self.update_status.expires_on
-            and self.update_status.expires_on > timezone.now()
-        ):
-            return False
-        history = esi.client.Character.get_characters_character_id_corporationhistory(
-            character_id=self.eve_character.character_id
-        ).results()
-
         self.corporation_history.update_for_char(self, history)
         return True
 
