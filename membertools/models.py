@@ -684,15 +684,14 @@ class Member(models.Model):
     last_joined = models.DateTimeField(blank=True, null=True)
     first_main_character = models.ForeignKey(
         EveCharacter,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         related_name="+",
         null=True,
     )
-    main_character = models.ForeignKey(
+    main_character = models.OneToOneField(
         EveCharacter,
         on_delete=models.CASCADE,
         related_name="next_member",
-        null=True,
     )
     characters = models.ManyToManyField(EveCharacter, through="CharacterLink")
 
