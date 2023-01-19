@@ -38,6 +38,7 @@ from allianceauth.eveonline.models import EveCharacter
 from allianceauth.services.hooks import get_extension_logger
 
 from .app_settings import (
+    MEMBERTOOLS_MAIN_CORP_ID,
     MEMBERTOOLS_APP_ARCHIVE_TIME,
     MEMBERTOOLS_APP_NAME,
     MEMBERTOOLS_ADMIN_NAME,
@@ -1055,18 +1056,31 @@ def hr_admin_approve_action(request, tokens, app_id):
         logger.info("User %s approving %s.", request.user, app)
 
         try:
-            member = app.main_character.next_character.member
-        except ObjectDoesNotExist:
+            member = Member.objects.get(
+                main_character__character_ownership__user=app.main_character.character_ownership.user
+            )
+        except Member.DoesNotExist:
             member = None
 
         with transaction.atomic():
             # Are we creating a new Member record for this character?
-            if member is None:
+            if (
+                member is None
+                and app.form.corp.corporation_id == MEMBERTOOLS_MAIN_CORP_ID
+            ):
                 member = Member.objects.create(
                     first_main_character=app.eve_character,
                     main_character=app.eve_character,
                 )
                 logger.debug("Created new member record for %s", app.eve_character)
+            # Update member's main character if it changes with this application (e.g. Returning member re-joins with a new main)
+            elif (
+                app.form.corp.corporation_id == MEMBERTOOLS_MAIN_CORP_ID
+                and member.main_character != app.main_character
+            ):
+                member.main_character = app.main_character
+                member.save()
+
             char_detail = Character.objects.get(eve_character=app.eve_character)
             char_detail.member = member
             char_detail.save()
