@@ -1,11 +1,39 @@
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
 
-from .models import Application, ApplicationTitle, Character
+from allianceauth.authentication.models import UserProfile
+
+from .models import ApplicationTitle, Character, Member
 
 from allianceauth.services.hooks import get_extension_logger
 
 logger = get_extension_logger(__name__)
+
+
+@receiver(pre_save, sender=UserProfile)
+def change_main_hook(instance, **kwargs):
+    if not instance.id:
+        return
+
+    old_instance = UserProfile.objects.get(id=instance.id)
+
+    try:
+        member = Member.objects.get(
+            main_character__character_ownership__user=instance.user
+        )
+    except Member.DoesNotExist:
+        # Nothing to do if there is no Member record for this user.
+        return
+
+    if instance.main_character != old_instance.main_character:
+        logger.info(
+            "%s changing main from %s to %s.",
+            instance.user,
+            instance.main_character.character_name,
+            old_instance.main_character.character_name,
+        )
+        member.main_character = instance.main_character
+        member.save()
 
 
 @receiver(pre_save, sender=Character)
