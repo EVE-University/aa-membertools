@@ -14,7 +14,11 @@
             <div class="col-lg-6">
                 <dl class="dl-horizontal">
                     <dt>Main Character:</dt>
-                    <dd class="nowrap">{{ member.main_character }}</dd>
+                    {% if member.main_character.next_character %}
+                    <dd><a href="{% url 'membertools_admin:char_detail_view' member.main_character.next_character.id %}">{{ member.main_character.character_name }}</a></dd>
+                    {% else %}
+                    <dd>{{ member.main_character.character_name }}</dd>
+                    {% endif %}
                     <dt>Awarded Title:</dt>
                     <dd>{{ member.awarded_title }}</dd>
                     <dt>First Joined:</dt>
@@ -26,11 +30,17 @@
             <div class="col-lg-6">
                 <dl class="dl-horizontal">
                     <dt>Current Corp:</dt>
-                    <dd>{{ member.main_character.corporation_name }}
+                    <dd>{{ member.main_character.corporation_name }}</dd>
                     <dt>Current Alliance:</dt>
-                    <dd>{{ member.main_character.alliance_name }}
+                    <dd>{{ member.main_character.alliance_name }}</dd>
                     <dt>Current Faction:</dt>
-                    <dd>{{ member.main_character.faction_name }}
+                    <dd>{{ member.main_character.faction_name }}</dd>
+                    <dt>First Main:</dt>
+                    {% if member.first_main_character.next_character %}
+                    <dd><a href="{% url 'membertools_admin:char_detail_view' member.first_main_character.next_character.id %}">{{ member.first_main_character.character_name }}</a></dd>
+                    {% else %}
+                    <dd>{{ member.first_main_character.character_name }}</dd>
+                    {% endif %}
                 </dl>
             </div>        
         </div>
