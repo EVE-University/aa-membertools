@@ -709,8 +709,13 @@ def hr_admin_char_detail_lookup(request, char_id):
             character_id=char_id,
         )
 
-        owner = get_object_or_404(CharacterOwnership, character__character_id=char_id)
-        member = getattr(owner.user, "next_member_detail", None)
+        owner = get_object_or_404(
+            CharacterOwnership, character__character_id=char_id
+        ).user
+        try:
+            member = Member.objects.get(main_character__character_ownership__user=owner)
+        except Member.DoesNotExist:
+            member = None
         detail = Character.objects.create(eve_character=char, member=member)
 
         tasks.update_character.apply(args=[detail.id, True])
