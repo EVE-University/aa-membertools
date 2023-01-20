@@ -6,8 +6,11 @@ app_name = "membertools_admin"
 
 urlpatterns = [
     path("", views.hr_admin_dashboard_view, name="index"),
-    path("queue/", views.hr_admin_queue_view, name="queue"),
-    path("archive/", views.hr_admin_archive_view, name="archive"),
+    path("queue", views.hr_admin_queue_view, name="queue"),
+    path("archive", views.hr_admin_archive_view, name="archive"),
+    path(
+        "archive/<str:app_status>", views.hr_admin_archive_view, name="archive_status"
+    ),
     path("remove/<int:app_id>", views.hr_admin_remove, name="remove"),
     path("view/<int:app_id>", views.hr_admin_view, name="view"),
     path(
