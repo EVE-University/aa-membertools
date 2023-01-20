@@ -24,8 +24,10 @@ from allianceauth.services.tasks import QueueOnce
 from esi.errors import DjangoEsiException
 from esi.models import Token
 
-from .models import Member, Character, CharacterUpdateStatus
+from .app_settings import MEMBERTOOLS_APP_ARCHIVE_TIME
+from .models import Application, Character, CharacterUpdateStatus, Member
 from .providers import esi
+
 
 logger = get_extension_logger(__name__)
 
@@ -69,6 +71,29 @@ def open_newmail_window(self, recipients, subject, body, token_id):
     if res.status_code != 204:
         raise DjangoEsiException
     return True
+
+
+@shared_task(**TASK_DEFAULT_KWARGS)
+def membertools_periodic():
+    close_expired_apps()
+    update_all_characters()
+
+
+@shared_task(**TASK_DEFAULT_KWARGS)
+def close_expired_apps():
+    cutoff_date = timezone.now() - MEMBERTOOLS_APP_ARCHIVE_TIME
+
+    query = Application.objects.filter(status=Application.STATUS_PROCESSED).filter(
+        decision_on__lte=cutoff_date
+    )
+
+    updated = query.update(
+        status=Application.STATUS_CLOSED,
+        status_on=timezone.now(),
+        closed_on=timezone.now(),
+    )
+
+    logger.info("Closed %d processed apps", updated)
 
 
 @shared_task(**TASK_DEFAULT_KWARGS)
