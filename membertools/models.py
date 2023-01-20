@@ -333,7 +333,7 @@ class Application(models.Model):
         (DECISION_PENDING, _("Pending")),
         (DECISION_ACCEPT, _("Accept")),
         (DECISION_REJECT, _("Reject")),
-        (DECISION_WITHDRAW, _("Withdrawn")),
+        (DECISION_WITHDRAW, _("Withdraw")),
     )
 
     DECISION_MESSAGE = {
