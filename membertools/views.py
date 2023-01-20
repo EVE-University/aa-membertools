@@ -452,7 +452,16 @@ def hr_admin_queue_view(request):
 @permission_required(
     ["membertools.admin_access", "membertools.application_admin_access"]
 )
-def hr_admin_archive_view(request):
+def hr_admin_archive_view(request, app_status=None):
+    if app_status == "closed":
+        status_filter = Q(status=Application.STATUS_CLOSED)
+    elif app_status == "processed":
+        status_filter = Q(status=Application.STATUS_PROCESSED)
+    else:
+        status_filter = Q(status=Application.STATUS_PROCESSED) | Q(
+            status=Application.STATUS_CLOSED
+        )
+
     base_query = (
         Application.objects.select_related(
             "eve_character__character_ownership__user",
@@ -460,11 +469,7 @@ def hr_admin_archive_view(request):
             "form__corp",
             "form__title",
         )
-        .filter(
-            Q(decision=Application.DECISION_ACCEPT)
-            | Q(decision=Application.DECISION_REJECT)
-            | Q(decision=Application.DECISION_WITHDRAW)
-        )
+        .filter(status_filter)
         .filter(form__in=ApplicationForm.objects.get_forms_for_user(request.user))
     )
 
@@ -487,9 +492,9 @@ def hr_admin_archive_view(request):
             | Q(
                 eve_character__character_ownership__user__profile__main_character__character_name__icontains=search
             )
-        ).order_by("-closed_on")
+        ).order_by("-decision_on")
     else:
-        applications = base_query.all().order_by("-closed_on")
+        applications = base_query.all().order_by("-decision_on")
 
     paginator = Paginator(applications, 50)
 
@@ -499,7 +504,7 @@ def hr_admin_archive_view(request):
         page_number = 1
 
     context = {
-        "page_title": _("Closed Applications"),
+        "page_title": _("Applications"),
         "paginator": paginator,
         "applications": paginator.get_page(page_number),
         "application_delta_human": humanize.naturaldelta(MEMBERTOOLS_APP_ARCHIVE_TIME),
@@ -1273,14 +1278,13 @@ def hr_admin_reject_action(request, tokens, app_id):
         with transaction.atomic():
             app.status = app.STATUS_PROCESSED
             app.decision = app.DECISION_REJECT
-            app.closed = timezone.now()
+            app.decision_on = timezone.now()
+            app.decision_by = request.user.profile.main_character
             app.save()
             ApplicationAction.objects.create_action(
                 app,
                 ApplicationAction.REJECT,
-                request.user.profile.main_character
-                if not is_override
-                else app.reviewer,
+                app.reviewer,
                 None,
                 request.user.profile.main_character if is_override else None,
             )
