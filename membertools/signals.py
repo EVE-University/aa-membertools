@@ -25,12 +25,17 @@ def change_main_hook(instance, **kwargs):
         # Nothing to do if there is no Member record for this user.
         return
 
-    if instance.main_character != old_instance.main_character:
+    if (
+        instance.main_character
+        and instance.main_character != old_instance.main_character
+    ):
         logger.info(
             "%s changing main from %s to %s.",
             instance.user,
             instance.main_character.character_name,
-            old_instance.main_character.character_name,
+            old_instance.main_character.character_name
+            if old_instance.main_character
+            else "(Unknown)",
         )
         member.main_character = instance.main_character
         member.save()
