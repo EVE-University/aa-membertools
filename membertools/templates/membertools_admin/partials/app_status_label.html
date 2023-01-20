@@ -1,12 +1,16 @@
 {% comment %}
 {% endcomment %}
 {% load i18n %}
-{% if application.status == application.STATUS_ACCEPT %}
-<span class="label label-success">{{ app.get_status_display }}</span>
-{% elif application.status == application.STATUS_REJECT %}
-<span class="label label-danger">{{ app.get_status_display }}</span>
-{% elif application.status == application.STATUS_PENDING %}
-<span class="label label-warning">{{ app.get_status_display }}</span>
+{% if application.status == application.STATUS_NEW %}
+<span class="label label-info">{{ app.get_status_display }}</span>
+{% elif application.status == application.STATUS_REVIEW %}
+<span class="label label-primary">{{ app.get_status_display }}</span>
+{% elif application.status == application.STATUS_WAIT %}
+<span class="label label-primary">{{ app.get_status_display }}</span>
+{% elif application.status == application.STATUS_PROCESSED %}
+<span class="label label-info">{{ app.get_status_display }}</span>
+{% elif application.status == application.STATUS_CLOSED %}
+<span class="label label-primary">{{ app.get_status_display }}</span>
 {% else %}
 <span class="label label-info">{{ app.get_status_display }}</span>
 {% endif %}
