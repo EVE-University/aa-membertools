@@ -39,11 +39,6 @@ urlpatterns = [
         name="action_release",
     ),
     path(
-        "action/claim/<int:app_id>",
-        views.hr_admin_claim_action,
-        name="action_claim",
-    ),
-    path(
         "action/wait/<int:app_id>",
         views.hr_admin_wait_action,
         name="action_wait",

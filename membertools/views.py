@@ -732,21 +732,45 @@ def hr_admin_char_detail_lookup(request, char_id):
     ]
 )
 def hr_admin_remove(request, app_id):
-    logger.debug(f"hr_admin_remove called by user {request.user} for app id {app_id}")
+    logger.debug(
+        "hr_admin_remove called by user %s for app id %d", request.user, app_id
+    )
     app = get_object_or_404(Application, pk=app_id)
     if not is_form_manager(app.form, request.user, "membertools.delete_application"):
-        logger.warn(
-            f"User {request.user} does not have permission to delete apps for {app.form}."
+        logger.warning(
+            "User %s does not have permission to delete apps for %s.",
+            request.user,
+            app.form,
         )
         raise PermissionDenied
-    logger.info(f"User {request.user} deleting {app}")
-    app.delete()
-    notify(
-        app.user,
-        "Application Deleted",
-        message="Your application for %s was deleted." % app.form,
+
+    if request.method == "POST":
+        logger.info("User %s deleting %s", request.user, app)
+        app.delete()
+        notify(
+            app.user,
+            "Application Deleted",
+            message=f"Your application for {app.form} was deleted.",
+        )
+        messages.add_message(
+            request, messages.SUCCESS, _("Application was deleted successfully.")
+        )
+
+        return redirect("membertools_admin:queue")
+
+    context = {
+        "page_title": "Confirm Application Deletion",
+        "message": _(
+            "Are you sure you wish to delete this application? This action cannot be undone."
+        ),
+        "cancel_url": reverse("membertools_admin:view", args=[app_id]),
+    }
+
+    return render(
+        request,
+        "membertools_admin/confirmation.html",
+        hr_admin_add_shared_context(request, context),
     )
-    return redirect("membertools_admin:queue")
 
 
 # Admin decision views
@@ -763,11 +787,19 @@ def hr_admin_remove(request, app_id):
 )
 def hr_admin_start_review_action(request, app_id):
     logger.debug(
-        f"hr_admin_start_review called by user {request.user} for app id {app_id}"
+        "hr_admin_start_review called by user %s for app id %d", request.user, app_id
     )
     app = get_object_or_404(Application, pk=app_id)
     is_recruiter = is_form_recruiter(app.form, request.user)
     is_manager = is_form_manager(app.form, request.user)
+    try:
+        is_override = (
+            app.reviewer and app.reviewer.character_ownership.user != request.user
+        )
+    except ObjectDoesNotExist:
+        # Reviewer not having character_ownership is an unusual situation that should warrant an
+        # override to be safe.
+        is_override = True
 
     if not is_recruiter:
         logger.warning(
@@ -775,66 +807,90 @@ def hr_admin_start_review_action(request, app_id):
             request.user,
             app.form,
         )
-        raise PermissionDenied
-    if app.status == app.STATUS_CLOSED:
+        return HttpResponseForbidden
+
+    if app.reviewer and is_override and not is_manager:
+        logger.warning(
+            "User %s does not have permission to override start review apps for %s.",
+            request.user,
+            app.form,
+        )
+        return HttpResponseForbidden
+
+    if app.status not in [
+        Application.STATUS_NEW,
+        Application.STATUS_REVIEW,
+        Application.STATUS_WAIT,
+    ]:
         messages.add_message(
             request,
             messages.ERROR,
-            _("Can not Start Review on a closed application."),
+            _(
+                "%s isn't a valid application status for the Start Review action.",
+                app.get_status_display(),
+            ),
         )
         return redirect("membertools_admin:view", app_id)
-    if app.status == app.STATUS_REVIEW or app.status == app.STATUS_WAIT:
-        if app.reviewer and app.reviewer.character_ownership.user != request.user:
-            if not is_manager:
-                logger.warning(
-                    "User %s unable to start review %s: already being reviewed by %s",
-                    request.user,
-                    app,
-                    app.reviewer,
-                )
-                messages.add_message(
-                    request,
-                    messages.ERROR,
-                    _("Application is already under review by %(reviewer)s")
-                    % {"reviewer": app.reviewer.profile.main_character},
-                )
-                return redirect("membertools_admin:view", app_id)
 
-            logger.info("%s taking over %s for %s", request.user, app, app.reviewer)
-            with transaction.atomic():
-                ApplicationAction.objects.create_action(
-                    app,
-                    ApplicationAction.RELEASE,
-                    app.reviewer,
-                    None,
-                    request.user.profile.main_character,
-                )
-                app.reviewer = request.user
-                app.save()
-                ApplicationAction.objects.create_action(
-                    app, ApplicationAction.REVIEW, request.user.profile.main_character
-                )
-        else:
-            logger.info(f"User %s resuming progress on %s", request.user, app)
-            with transaction.atomic():
-                app.last_status = app.status
-                app.status = app.STATUS_REVIEW
-                app.reviewer = request.user.profile.main_character
-                app.save()
-                ApplicationAction.objects.create_action(
-                    app, ApplicationAction.REVIEW, request.user.profile.main_character
-                )
+    # Possible multiple click while waiting on loading, just silently redirect to app.
+    if app.reviewer and app.status == Application.STATUS_REVIEW and not is_override:
+        return redirect("membertools_admin:view", app_id)
 
-    else:
-        logger.info(f"User %s marking %s in progress", request.user, app)
-        with transaction.atomic():
-            app.last_status = app.status
-            app.status = app.STATUS_REVIEW
-            app.reviewer = request.user.profile.main_character
-            app.save()
-            ApplicationAction.objects.create_action(
-                app, ApplicationAction.REVIEW, request.user.profile.main_character
+    # Check if we need to get a confirmation before continuing
+    if (
+        app.reviewer
+        and is_override
+        and app.status
+        in [Application.STATUS_REVIEW or app.status == Application.STATUS_WAIT]
+    ):
+        if request.method != "POST":
+            context = {
+                "page_title": "Confirm Take Over",
+                "message": _(
+                    "Are you sure you wish to take over review of this application?"
+                ),
+                "cancel_url": reverse("membertools_admin:view", args=[app_id]),
+            }
+
+            return render(
+                request,
+                "membertools_admin/confirmation.html",
+                hr_admin_add_shared_context(request, context),
             )
+
+    with transaction.atomic():
+        old_status = app.status
+        old_reviewer = app.reviewer
+        app.status = Application.STATUS_REVIEW
+        app.last_status = old_status
+        app.reviewer = request.user.profile.main_character
+        app.save()
+
+        if (
+            is_override
+            and old_reviewer
+            and old_status
+            in [
+                Application.STATUS_REVIEW,
+                Application.STATUS_WAIT,
+            ]
+        ):
+            logger.debug(
+                "Releasing app %s from %s to %s", app, old_reviewer, app.reviewer
+            )
+            ApplicationAction.objects.create_action(
+                app,
+                ApplicationAction.RELEASE,
+                old_reviewer,
+                None,
+                app.reviewer,
+            )
+        else:
+            logger.debug("%s is claiming app %s", app.reviewer, app)
+        ApplicationAction.objects.create_action(
+            app, ApplicationAction.REVIEW, app.reviewer
+        )
+
     return redirect("membertools_admin:view", app_id)
 
 
@@ -854,7 +910,14 @@ def hr_admin_release_action(request, app_id):
     app = get_object_or_404(Application, pk=app_id)
     is_recruiter = is_form_recruiter(app.form, request.user)
     is_manager = is_form_manager(app.form, request.user)
-    reviewer_user = app.reviewer.character_ownership.user
+    try:
+        is_override = (
+            app.reviewer and app.reviewer.character_ownership.user != request.user
+        )
+    except ObjectDoesNotExist:
+        # Reviewer not having character_ownership is an unusual situation that should warrant an
+        # override to be safe.
+        is_override = True
 
     if not is_recruiter:
         logger.warning(
@@ -864,11 +927,11 @@ def hr_admin_release_action(request, app_id):
         )
         raise PermissionDenied
 
-    if app.status == app.STATUS_CLOSED:
+    if app.status in [Application.STATUS_PROCESSED, Application.STATUS_CLOSED]:
         messages.add_message(
             request,
             messages.ERROR,
-            _("Can not release a closed application."),
+            _("Can not release a processed/closed application."),
         )
         return redirect("membertools_admin:view", app_id)
 
@@ -881,27 +944,25 @@ def hr_admin_release_action(request, app_id):
         )
         return redirect("membertools_admin:view", app_id)
 
-    if not is_manager and reviewer_user != request.user:
+    if not is_manager and is_override:
         logger.warning("User %s attempted to release app_id %d", request.user, app_id)
         raise PermissionDenied
 
     if request.method == "POST":
         old_reviewer = app.reviewer
         with transaction.atomic():
-            ApplicationAction.objects.create_action(
-                app,
-                ApplicationAction.RELEASE,
-                app.reviewer,
-                None,
-                request.user.profile.main_character
-                if reviewer_user != request.user
-                else None,
-            )
             app.reviewer = None
             app.status = app.last_status
             app.save()
+            ApplicationAction.objects.create_action(
+                app,
+                ApplicationAction.RELEASE,
+                old_reviewer,
+                None,
+                request.user.profile.main_character if is_override else None,
+            )
 
-        if reviewer_user != request.user:
+        if is_override:
             message = _(
                 "Application released from %(reviewer)s and placed back into its last queue."
                 % {"reviewer": old_reviewer}
@@ -920,101 +981,7 @@ def hr_admin_release_action(request, app_id):
     context = {
         "page_title": "Confirm Application Release",
         "message": _(
-            "Are you sure you wish to release this application back to its last queue?"
-        ),
-        "cancel_url": "",
-    }
-
-    return render(
-        request,
-        "membertools_admin/confirmation.html",
-        hr_admin_add_shared_context(request, context),
-    )
-
-
-@login_required
-@permission_required(
-    [
-        "membertools.admin_access",
-        "membertools.application_admin_access",
-        "membertools.view_application",
-        "membertools.review_application",
-    ]
-)
-def hr_admin_claim_action(request, app_id):
-    logger.debug(
-        f"hr_admin_claim_action called by user {request.user} for app id {app_id}"
-    )
-    app = get_object_or_404(Application, pk=app_id)
-    is_recruiter = is_form_recruiter(app.form, request.user)
-    is_manager = is_form_manager(app.form, request.user)
-
-    if not is_recruiter:
-        logger.warning(
-            "User %s does not have permission to claim apps for %s.",
-            request.user,
-            app.form,
-        )
-        raise PermissionDenied
-
-    if app.status == app.STATUS_CLOSED:
-        messages.add_message(
-            request,
-            messages.ERROR,
-            _("Can not claim a closed application."),
-        )
-        return redirect("membertools_admin:view", app_id)
-
-    # Can't claim an app that isn't locked by reviewer.
-    if not app.reviewer:
-        messages.add_message(
-            request,
-            messages.ERROR,
-            _("Can not claim an application that isn't claimed by a reviewer."),
-        )
-        return redirect("membertools_admin:view", app_id)
-
-    if app.reviewer.character_ownership.user == request.user:
-        messages.add_message(
-            request,
-            messages.ERROR,
-            _("Can not claim an application you are already reviewing."),
-        )
-        return redirect("membertools_admin:view", app_id)
-
-    if not is_manager:
-        logger.warning("User %s attempted to claim app_id %d", request.user, app_id)
-        raise PermissionDenied
-
-    if request.method == "POST":
-        old_reviewer = app.reviewer
-        with transaction.atomic():
-            ApplicationAction.objects.create_action(
-                app,
-                ApplicationAction.RELEASE,
-                app.reviewer,
-                None,
-                request.user.profile.main_character,
-            )
-            app.reviewer = request.user.profile.main_character
-            app.status = app.STATUS_REVIEW
-            app.save()
-            ApplicationAction.objects.create_action(
-                app, ApplicationAction.REVIEW, request.user.profile.main_character
-            )
-
-        messages.add_message(
-            request,
-            messages.SUCCESS,
-            _("Application claimed from %(reviewer)s." % {"reviewer": old_reviewer}),
-        )
-
-        return redirect("membertools_admin:queue")
-
-    context = {
-        "page_title": "Confirm Application Release",
-        "message": _(
-            "Are you sure you wish to release this application back to its last queue?"
+            "Are you sure you wish to release this application back into its last queue?"
         ),
         "cancel_url": reverse("membertools_admin:view", args=[app_id]),
     }
@@ -1043,7 +1010,14 @@ def hr_admin_approve_action(request, tokens, app_id):
     app = get_object_or_404(Application, pk=app_id)
     is_recruiter = is_form_recruiter(app.form, request.user)
     is_manager = is_form_manager(app.form, request.user)
-    is_override = request.user.profile.main_character != app.reviewer
+    try:
+        is_override = (
+            app.reviewer and app.reviewer.character_ownership.user != request.user
+        )
+    except ObjectDoesNotExist:
+        # Reviewer not having character_ownership is an unusual situation that should warrant an
+        # override to be safe.
+        is_override = True
 
     if not is_recruiter:
         logger.warning(
@@ -1126,7 +1100,9 @@ def hr_admin_approve_action(request, tokens, app_id):
         notify(
             app.user,
             "Application Accepted",
-            message="Your application for %s has been approved." % app.form,
+            message=_(
+                "Your application for %(form)s has been approved." % {"form": app.form}
+            ),
             level="success",
         )
 
@@ -1189,6 +1165,14 @@ def hr_admin_wait_action(request, app_id):
     app = get_object_or_404(Application, pk=app_id)
     is_recruiter = is_form_recruiter(app.form, request.user)
     is_manager = is_form_manager(app.form, request.user)
+    try:
+        is_override = (
+            app.reviewer and app.reviewer.character_ownership.user != request.user
+        )
+    except ObjectDoesNotExist:
+        # Reviewer not having character_ownership is an unusual situation that should warrant an
+        # override to be safe.
+        is_override = True
 
     if not is_recruiter:
         logger.warning(
@@ -1207,7 +1191,7 @@ def hr_admin_wait_action(request, app_id):
             ),
         )
 
-    if not is_manager and request.user != app.reviewer.character_ownership.user:
+    if not is_manager and is_override:
         logger.warning(
             "User %s tied to wait while not reviewing %s [%d]",
             request.user,
@@ -1226,15 +1210,13 @@ def hr_admin_wait_action(request, app_id):
             ApplicationAction.WAIT,
             app.reviewer,
             None,
-            request.user.profile.main_character
-            if request.user != app.reviewer.character_ownership.user
-            else None,
+            request.user.profile.main_character if is_override else None,
         )
 
     messages.add_message(
         request,
         messages.SUCCESS,
-        _("Application has been successfully placed into your Wait queue."),
+        _("Application has been successfully placed into the Wait queue."),
     )
     return redirect("membertools_admin:queue")
 
@@ -1260,7 +1242,14 @@ def hr_admin_reject_action(request, tokens, app_id):
         app.form, request.user, "membertools.reject_application"
     )
     is_manager = is_form_manager(app.form, request.user)
-    is_override = request.user.profile.main_character != app.reviewer
+    try:
+        is_override = (
+            app.reviewer and app.reviewer.character_ownership.user != request.user
+        )
+    except ObjectDoesNotExist:
+        # Reviewer not having character_ownership is an unusual situation that should warrant an
+        # override to be safe.
+        is_override = True
 
     if not is_recruiter and not is_manager:
         logger.warning(
@@ -1354,7 +1343,14 @@ def hr_admin_withdraw_action(request, app_id):
     app = get_object_or_404(Application, pk=app_id)
     is_recruiter = is_form_recruiter(app.form, request.user)
     is_manager = is_form_manager(app.form, request.user)
-    is_override = request.user.profile.main_character != app.reviewer
+    try:
+        is_override = (
+            app.reviewer and app.reviewer.character_ownership.user != request.user
+        )
+    except ObjectDoesNotExist:
+        # Reviewer not having character_ownership is an unusual situation that should warrant an
+        # override to be safe.
+        is_override = True
 
     if not is_recruiter:
         logger.warning(
@@ -1404,7 +1400,7 @@ def hr_admin_withdraw_action(request, app_id):
         return redirect("membertools_admin:view", app.id)
 
     context = {
-        "page_title": "Confirm Close",
+        "page_title": "Confirm Withdraw",
         "message": _(
             "Are you sure you wish to Withdraw this application? Applicant will have to submit a new application."
         ),
@@ -1427,8 +1423,7 @@ def hr_admin_withdraw_action(request, app_id):
         "membertools.manage_applications",
     ]
 )
-@tokens_required(["esi-location.read_online.v1", "esi-ui.open_window.v1"])
-def hr_admin_close_action(request, tokens, app_id):
+def hr_admin_close_action(request, app_id):
     logger.debug(
         "hr_admin_close_action called by user %s for app id %s", request.user, app_id
     )
