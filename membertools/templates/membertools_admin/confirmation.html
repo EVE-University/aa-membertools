@@ -4,9 +4,15 @@
 {% load i18n %}
 
 {% block inside_content %}
-<p>{{message}}</p>
-<form action="" method="POST">
-{% csrf_token %}
-<input type="submit" value="Confirm">
-</form>
+<div id="membertools-app-archive" class="panel panel-default">
+    <div class="panel-body">
+        <p class="lead">{{message}}</p>
+        <form action="" method="POST">
+        {% csrf_token %}
+        <input class="btn btn-success" type="submit" value="Confirm">
+        <a href="{{cancel_url}}" class="btn btn-danger">Cancel</a>
+        </form>
+        
+    </div>
+</div>
 {% endblock inside_content %}
