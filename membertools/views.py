@@ -1036,6 +1036,14 @@ def hr_admin_approve_action(request, tokens, app_id):
 
         return HttpResponseForbidden
 
+    if app.status != Application.STATUS_REVIEW:
+        messages.add_message(
+            request,
+            messages.ERROR,
+            _("Cannot accept an application not under Review"),
+        )
+        return redirect("membertools_admin:view", app.id)
+
     if request.method == "POST":
         logger.info("User %s approving %s.", request.user, app)
 
@@ -1190,16 +1198,25 @@ def hr_admin_wait_action(request, app_id):
                 "You cannot flag an application to wait that isn't being reviewed, sorcerer."
             ),
         )
+        return redirect("membertools_admin:view", app.id)
 
     if not is_manager and is_override:
         logger.warning(
-            "User %s tied to wait while not reviewing %s [%d]",
+            "User %s tied to Wait while not Reviewing %s [%d]",
             request.user,
             app,
             app.id,
         )
 
         return HttpResponseForbidden
+
+    if app.status != Application.STATUS_REVIEW:
+        messages.add_message(
+            request,
+            messages.ERROR,
+            _("Cannot wait an application not under Review"),
+        )
+        return redirect("membertools_admin:view", app.id)
 
     logger.info("User %s waiting %s", request.user, app)
     with transaction.atomic():
@@ -1253,7 +1270,7 @@ def hr_admin_reject_action(request, tokens, app_id):
 
     if not is_recruiter and not is_manager:
         logger.warning(
-            "User %s does not have permission to reject apps for %s.",
+            "User %s does not have permission to Reject apps for %s.",
             request.user,
             app.form,
         )
@@ -1261,11 +1278,19 @@ def hr_admin_reject_action(request, tokens, app_id):
 
     if is_override and not is_manager:
         logger.warning(
-            "User %s does not have permission to override reject apps for %s.",
+            "User %s does not have permission to override Reject apps for %s.",
             request.user,
             app.form,
         )
         return HttpResponseForbidden
+
+    if app.status != Application.STATUS_REVIEW:
+        messages.add_message(
+            request,
+            messages.ERROR,
+            _("Cannot Reject an application not under Review"),
+        )
+        return redirect("membertools_admin:view", app.id)
 
     if request.method == "POST":
         logger.info(f"User {request.user} rejecting {app}")
@@ -1368,6 +1393,14 @@ def hr_admin_withdraw_action(request, app_id):
         )
         return HttpResponseForbidden
 
+    if app.status != Application.STATUS_REVIEW:
+        messages.add_message(
+            request,
+            messages.ERROR,
+            _("Cannot Withdraw an application not under Review"),
+        )
+        return redirect("membertools_admin:view", app.id)
+
     if request.method == "POST":
         logger.info("User %s withdrawing %s.", request.user, app)
         with transaction.atomic():
@@ -1437,6 +1470,14 @@ def hr_admin_close_action(request, app_id):
             app.form,
         )
         return HttpResponseForbidden
+
+    if app.status != Application.STATUS_PROCESSED:
+        messages.add_message(
+            request,
+            messages.ERROR,
+            _("Cannot Close an application that isn't Processed"),
+        )
+        return redirect("membertools_admin:view", app.id)
 
     if request.method == "POST":
         logger.info("User %s closing %s.", request.user, app)
