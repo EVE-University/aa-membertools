@@ -16,7 +16,7 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     license="GPL2",
-    description="Alliance Auth hrapplications extended with some additional features",
+    description="Alliance Auth Membertools, slowly transforming away from Alliance Auth HRApps.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/EVE-University/aa-membertools",
