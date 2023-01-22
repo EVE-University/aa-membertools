@@ -18,7 +18,15 @@ from django.core.management.base import BaseCommand, CommandError
 
 
 class Command(BaseCommand):
-    help = "Imports data from HRAppsNext database. Should be ran on a fresh membertools database."
+    help = "Imports data from HRAppsNext database. Shouldn't be ran after any non-imported data is present in membertools."
+
+    def add_arguments(self, parser) -> None:
+        parser.add_argument(
+            "--confirm",
+            action="store_true",
+            required=True,
+            help="Provide this flag to confirm you wish to import",
+        )
 
     def _import_app_forms(self):
         HRNApplicationForm = apps.get_model("hrappsnext", "ApplicationForm")
@@ -153,6 +161,9 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         if not apps.is_installed("hrappsnext"):
             self.stderr.write("HRAppsnext is not installed.")
+            exit()
+
+        if not options["confirm"]:
             exit()
 
         with transaction.atomic():
