@@ -1,12 +1,10 @@
-# E-Uni Alliance Auth Application HR Applications Next
+# E-Uni Alliance Auth Member Tools
 
-HR Applications Next Application
+EVE University's Member Administration Tools
 
 ## Features
 
-Temporarily requires auth.human_resources permission to access recruitment side.
-
-No permissions required to access and submit applications
+Requires membertools.basic_access to see applicant areas.
 
 ## Installation
 
@@ -22,11 +20,10 @@ No permissions required to access and submit applications
     ]
     ```
 
-4. Useful commands after installing an app, but not required for the base membertools.
+4. Useful commands after installing.
 
     ```shell
-    python manage.py makemigrations membertools
-    python manage.py migrate
+    python manage.py migrate membertools
 
     python manage.py collectstatic
     ```
