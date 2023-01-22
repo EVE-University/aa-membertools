@@ -134,7 +134,6 @@ class Command(BaseCommand):
                 )
 
             for comment in HRNApplicationComment.objects.filter(application=app.id):
-                self.stdout.write(f"Comment({comment.id}): {comment.user}")
                 poster = comment.user.profile.main_character
                 if not poster:
                     poster = EveCharacter.objects.get(
