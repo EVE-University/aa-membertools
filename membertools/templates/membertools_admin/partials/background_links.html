@@ -23,5 +23,7 @@
         <td class="text-center"><button class="btn btn-primary btn-disabled" disabled="disabled">Member Audit</button></td>
         {% endif %}
         <td class="text-center"><a class="btn btn-primary" target="_blank" href="https://forum.eveuniversity.org/search.php?keywords=&terms=all&author={{ character.character_name|urlencode }}&sc=1&sf=all&sr=posts&sk=t&sd=d&st=0&ch=300&t=0&submit=Search">EVE Uni Forums</a></td>
+        <td class="text-center"><a class="btn btn-primary" target="_blank" href="https://portal.eveuniversity.org/personnel/details/{{ character.character_id }}">Legacy Personnel</a></td>
+        <td class="text-center"><a class="btn btn-primary" target="_blank" href="https://portal.eveuniversity.org/titles/details/{{ character.character_id }}">Legacy Titles</a></td>
     </tr>
 </table>
