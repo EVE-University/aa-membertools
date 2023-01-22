@@ -65,6 +65,12 @@ esi = EsiClientProvider()
 
 
 def get_user_characters(request, character):
+    # If character is unowned, just return character
+    try:
+        user = character.character_ownership.user
+    except ObjectDoesNotExist:
+        return [character]
+
     if not character.character_ownership.user:
         characters = EveCharacter.objects.none()
     else:
@@ -102,13 +108,17 @@ def is_form_manager(form, user, perm="membertools.manage_application") -> bool:
 def get_checks(
     user: settings.AUTH_USER_MODEL, character: EveCharacter, request: HttpRequest
 ) -> dict:
-    check = Check.get_instance(user, character, request)
+
     checks = {}
-    checks["verified"] = check.check("verified", user, character)
-    checks["memberaudit"] = check.check("memberaudit", user, character)
-    checks["discord"] = check.check("discord", user, character)
-    checks["mumble"] = check.check("mumble", user, character)
-    checks["phpbb3"] = check.check("phpbb3", user, character)
+
+    if user is not None and character is not None:
+        check = Check.get_instance(user, character, request)
+
+        checks["verified"] = check.check("verified", user, character)
+        checks["memberaudit"] = check.check("memberaudit", user, character)
+        checks["discord"] = check.check("discord", user, character)
+        checks["mumble"] = check.check("mumble", user, character)
+        checks["phpbb3"] = check.check("phpbb3", user, character)
 
     return checks
 
@@ -532,7 +542,7 @@ def hr_admin_view(request, app_id, comment_form=None, edit_comment=None):
 
     try:
         member = app.main_character.next_character.member
-    except ObjectDoesNotExist:
+    except (ObjectDoesNotExist, AttributeError):
         member = None
 
     details, created = Character.objects.get_or_create(
