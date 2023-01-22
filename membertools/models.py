@@ -356,7 +356,7 @@ class Application(models.Model):
         related_name="next_applications",
     )
     status = models.SmallIntegerField(choices=STATUS_CHOICES, default=STATUS_NEW)
-    status_on = models.DateTimeField(auto_now_add=True)
+    status_on = models.DateTimeField(default=timezone.now)
     last_status = models.SmallIntegerField(choices=STATUS_CHOICES, default=STATUS_NEW)
     decision = models.SmallIntegerField(
         choices=DECISION_CHOICES, default=DECISION_PENDING
@@ -372,7 +372,7 @@ class Application(models.Model):
         null=True,
         related_name="+",
     )
-    submitted_on = models.DateTimeField(auto_now_add=True)
+    submitted_on = models.DateTimeField(default=timezone.now)
     closed_on = models.DateTimeField(blank=True, null=True)
 
     objects = ApplicationManager()
