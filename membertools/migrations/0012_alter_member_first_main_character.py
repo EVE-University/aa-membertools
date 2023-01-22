@@ -7,7 +7,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('eveonline', '0017_alliance_and_corp_names_are_not_unique'),
+        ('eveonline', '0015_factions'),
         ('membertools', '0011_alter_member_main_character'),
     ]
 
