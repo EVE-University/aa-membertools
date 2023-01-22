@@ -133,7 +133,6 @@ class Check:
 
         print("_do_check_memberaudit")
 
-        # Using exceptions to break out of code block when further checks aren't possible to flatten method.
         if apps.is_installed("memberaudit"):
             Character = apps.get_model("memberaudit", "Character")
 
