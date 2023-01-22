@@ -472,7 +472,10 @@ class Application(models.Model):
     # Handle some automated field changes
     def save(self, *args, **kwargs):
         if self.pk:
-            old_instance = Application.objects.get(pk=self.pk)
+            try:
+                old_instance = Application.objects.get(pk=self.pk)
+            except Application.DoesNotExist:
+                old_instance = None
         else:
             old_instance = None
 
@@ -556,7 +559,10 @@ class Application(models.Model):
 
     @cached_property
     def characters(self):
-        return [o.character for o in self.user.character_ownerships.all()]
+        try:
+            return [o.character for o in self.user.character_ownerships.all()]
+        except AttributeError:
+            return [self.eve_character]
 
     @cached_property
     def reviewer_str(self):
