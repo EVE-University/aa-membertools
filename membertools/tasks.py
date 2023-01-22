@@ -97,7 +97,7 @@ def close_expired_apps():
 
 
 @shared_task(**TASK_DEFAULT_KWARGS)
-def update_all_characters(force=True):
+def update_all_characters(force=False):
     if force:
         query = Member.objects.values_list("id", flat=True)
     else:
@@ -120,7 +120,6 @@ def update_all_characters(force=True):
             .values_list("id", flat=True)
         )
     for character_id in query:
-        logger.debug(character_id)
         update_character.apply_async(
             kwargs={"character_id": character_id, "force": force}
         )
