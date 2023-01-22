@@ -971,7 +971,7 @@ class Character(models.Model):
                     alliance_id=details.get("alliance_id")
                 )
             except EveAllianceInfo.DoesNotExist:
-                self.alliance = EveAllianceInfo.objects.create_corporation_obj(
+                self.alliance = EveAllianceInfo.objects.create_alliance_obj(
                     details.get("alliance")
                 )
         else:
