@@ -20,9 +20,6 @@ from django.core.management.base import BaseCommand, CommandError
 class Command(BaseCommand):
     help = "Imports data from HRAppsNext database. Should be ran on a fresh membertools database."
 
-    def add_arguments(self, parser) -> None:
-        parser.add_argument("--main_corp_id", type=int, required=False)
-
     def _import_app_forms(self):
         HRNApplicationForm = apps.get_model("hrappsnext", "ApplicationForm")
         HRNApplicationQuestion = apps.get_model("hrappsnext", "ApplicationQuestion")
