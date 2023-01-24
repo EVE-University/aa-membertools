@@ -11,7 +11,7 @@ from .app_settings import (
 )
 from . import urls_app, urls_admin
 
-from .models import Application
+from .models import Application, TitleFilter
 
 from allianceauth.services.hooks import get_extension_logger
 
@@ -108,3 +108,8 @@ def register_app_url():
 @hooks.register("url_hook")
 def register_adm_url():
     return AdminUrls()
+
+
+@hooks.register("secure_group_filters")
+def register_sg_filters():
+    return [TitleFilter]

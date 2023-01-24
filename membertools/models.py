@@ -91,6 +91,10 @@ def _get_app_title_none():
     return res
 
 
+def _get_app_title_all():
+    return ApplicationTitle.objects.all()
+
+
 class ApplicationTitle(models.Model):
     name = models.CharField(max_length=64)
     priority = models.SmallIntegerField(default=0)
@@ -1084,3 +1088,117 @@ class CharacterLink(models.Model):
         Token, on_delete=models.SET_NULL, blank=True, null=True
     )
     reason = models.TextField(max_length=1024)
+
+
+# Secure Groups Filters
+class BaseFilter(models.Model):
+    description = models.CharField(
+        max_length=500,
+        help_text=_("The filter description that is shown to end users."),
+    )
+
+    class Meta:
+        abstract = True
+
+    def __str__(self):
+        return f"{self.name}: {self.description}"
+
+    @property
+    def name(self):
+        return "Not Implemented"
+
+    def process_filter(self, user):
+        raise NotImplementedError("Need to implement a filter.")
+
+
+class TitleFilter(BaseFilter):
+    awarded_titles = models.ManyToManyField(
+        ApplicationTitle,
+        related_name="+",
+        default=_get_app_title_all,
+        help_text=_("Titles awarded to the member."),
+    )
+    applied_titles = models.ManyToManyField(
+        ApplicationTitle,
+        related_name="+",
+        blank=True,
+        help_text=_("Titles currently applied to main character."),
+    )
+
+    class Meta:
+        verbose_name = "Smart Filter: Has Titles"
+        verbose_name_plural = verbose_name
+
+    @property
+    def name(self):
+        return "Titles Filter"
+
+    def process_filter(self, user):
+        try:
+            user_awarded = user.profile.main_character.next_member.awarded_title
+        except (ObjectDoesNotExist, AttributeError):
+            user_awarded = None
+
+        try:
+            user_applied = user.profile.main_character.next_character.applied_title
+        except (ObjectDoesNotExist, AttributeError):
+            user_applied = None
+
+        logger.debug(
+            "Titles process_filter(%s): W: %s A: %s", user, user_awarded, user_applied
+        )
+        if (
+            self.awarded_titles.exists()
+            and user_awarded not in self.awarded_titles.all()
+        ):
+            logger.debug("Failed on awarded")
+            return False
+
+        if (
+            self.applied_titles.exists()
+            and user_awarded not in self.applied_titles.all()
+        ):
+            logger.debug("Failed on applied")
+            return False
+
+        return True
+
+    def audit_filter(self, users):
+        awarded = self.awarded_titles.values_list("id", flat=True)
+        applied = (
+            self.applied_titles.values_list("id", flat=True)
+            if self.applied_titles.exists()
+            else None
+        )
+
+        res = (
+            Member.objects.select_related(
+                "main_character__next_member", "main_character__next_character"
+            )
+            .filter(main_character__character_ownership__user__in=users)
+            .values(
+                "main_character__character_ownership__user",
+                "main_character",
+                "main_character__character_name",
+                "awarded_title",
+                "main_character__next_character__applied_title",
+            )
+        )
+
+        out = {}
+        for row in res:
+            check = False
+            if row["awarded_title"] in awarded:
+                check = True
+                if applied:
+                    if row["main_character__next_character__applied_title"] in applied:
+                        check = True
+                    else:
+                        check = False
+
+            out[row["main_character__character_ownership__user"]] = {
+                "message": f"{row['main_character__character_name']}: {row['awarded_title']} - {row['main_character__next_character__applied_title']}",
+                "check": check,
+            }
+
+        return out
