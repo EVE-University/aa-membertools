@@ -14,6 +14,7 @@ from .models import (
     Member,
     Character,
     CharacterUpdateStatus,
+    TitleFilter,
 )
 
 
@@ -195,3 +196,8 @@ class CharacterUpdateStatusAdmin(admin.ModelAdmin):
     fields = ["character", "status", "updated_on", "expires_on", "task_id"]
     list_display = ["character", "status", "updated_on", "expires_on", "task_id"]
     readonly_fields = ["character", "status", "updated_on"]
+
+
+@admin.register(TitleFilter)
+class TitleFilterAdmin(admin.ModelAdmin):
+    list_display = ("name", "description")
