@@ -747,11 +747,9 @@ class Member(models.Model):
 
         history.reverse()
 
-        logger.debug(history)
-
         member_corp_id = MEMBERTOOLS_MAIN_CORP_ID
-        first_join = False
-        last_join = False
+        first_join = None
+        last_join = None
 
         for corp in history:
             if corp["corporation_id"] == member_corp_id:
@@ -935,6 +933,12 @@ class Character(models.Model):
             return None
 
         return character.online_status.last_login
+
+    def is_main(self):
+        try:
+            return self.eve_character.character_id == self.main_character.character_id
+        except AttributeError:
+            return False
 
     def __str__(self):
         return str(self.eve_character.character_name)

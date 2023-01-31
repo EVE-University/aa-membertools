@@ -74,9 +74,9 @@ def open_newmail_window(self, recipients, subject, body, token_id):
 
 
 @shared_task(**TASK_DEFAULT_KWARGS)
-def membertools_periodic():
+def membertools_periodic(force=False):
     close_expired_apps()
-    update_all_characters()
+    update_all_characters(force)
 
 
 @shared_task(**TASK_DEFAULT_KWARGS)
@@ -98,31 +98,17 @@ def close_expired_apps():
 
 @shared_task(**TASK_DEFAULT_KWARGS)
 def update_all_characters(force=False):
+    logger.debug("update_all_characters(force=%s)", force)
     if force:
-        query = Member.objects.values_list("id", flat=True)
+        query = Character.objects.all()
     else:
-        query = Member.objects.filter(
-            Q(first_joined__isnull=True) | Q(last_joined__isnull=True)
-        ).values_list("id", flat=True)
-    for member_id in query:
-        update_member.apply_async(kwargs={"member_id": member_id, "force": force})
-
-    if force:
-        query = Character.objects.values_list("id", flat=True)
-    else:
-        query = (
-            Character.objects.filter(
-                Q(update_status__isnull=True)
-                | Q(update_status__expires_on__isnull=True)
-                | Q(update_status__expires_on__lte=timezone.now())
-            )
-            .exclude(deleted=True)
-            .values_list("id", flat=True)
-        )
-    for character_id in query:
-        update_character.apply_async(
-            kwargs={"character_id": character_id, "force": force}
-        )
+        query = Character.objects.filter(
+            Q(update_status__isnull=True)
+            | Q(update_status__expires_on__isnull=True)
+            | Q(update_status__expires_on__lte=timezone.now())
+        ).exclude(deleted=True)
+    for char in query:
+        update_character.apply_async(kwargs={"character_id": char.id, "force": force})
 
 
 @shared_task(**{**TASK_ESI_KWARGS, **{"bind": True}})
@@ -204,6 +190,9 @@ def update_character(self, character_id, force=False):
 
         character.update_character_details(details)
         character.update_corporation_history(history)
+
+        if character.member is not None and character.is_main():
+            character.member.update_joined_dates()
 
         update_status.status = CharacterUpdateStatus.STATUS_OKAY
         update_status.updated_on = timezone.now()
