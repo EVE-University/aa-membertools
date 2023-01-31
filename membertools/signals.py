@@ -1,9 +1,11 @@
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
+from django.utils import timezone
 
 from allianceauth.authentication.models import UserProfile
 
-from .models import ApplicationTitle, Character, Member
+from .app_settings import MEMBERTOOLS_MAIN_CORP_ID
+from .models import ApplicationTitle, Character, Member, _get_app_title_none
 
 from allianceauth.services.hooks import get_extension_logger
 
@@ -42,19 +44,41 @@ def change_main_hook(instance, **kwargs):
 
 
 @receiver(pre_save, sender=Character)
-def left_corp_hook(instance, **kwargs):
+def corp_change_hook(instance, **kwargs):
     if not instance.id:
         # Ignore new objects
         return
     old_instance = Character.objects.get(id=instance.id)
 
-    if instance.corporation != old_instance.corporation:
-        logger.info(
-            "%s corp change from %s to %s, removing applied titles.",
-            instance,
-            old_instance.corporation,
-            instance.corporation,
-        )
-        instance.applied_title, _ = ApplicationTitle.objects.get_or_create(
-            name="None", priority=0
-        )
+    if instance.corporation.corporation_id == old_instance.corporation.corporation_id:
+        # No corp change, so nothing to do.
+        return
+
+    logger.info(
+        "%s corp change from %s to %s, removing applied titles.",
+        instance,
+        old_instance.corporation,
+        instance.corporation,
+    )
+    instance.applied_title = _get_app_title_none()
+
+    # TODO: Should this be broken out into a task?
+    if instance.corporation.corporation_id == MEMBERTOOLS_MAIN_CORP_ID:
+        try:
+            member = Member.objects.get(
+                main_character__character_ownership__user=instance.eve_character.character_ownership.user
+            )
+        except Member.DoesNotExist:
+            # TODO: New corp member without coming through tool. Maybe generate a warning notice to admins
+            # or may a message center inside the tool.
+            logger.warning(
+                "%s joined main corp outside of this tool", instance.character_name
+            )
+            return
+
+        member.last_joined = timezone.now()
+
+        if member.first_joined is None:
+            member.first_joined = member.last_joined
+
+        member.save()
