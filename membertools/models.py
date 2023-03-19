@@ -1138,6 +1138,7 @@ class TitleFilter(BaseFilter):
         return "Titles Filter"
 
     def process_filter(self, user):
+        logger.debug("process_filter(%s)", user)
         try:
             user_awarded = user.profile.main_character.next_member.awarded_title
         except (ObjectDoesNotExist, AttributeError):
@@ -1168,6 +1169,7 @@ class TitleFilter(BaseFilter):
         return True
 
     def audit_filter(self, users):
+        logger.debug("audit_filter(%s)", users)
         awarded = self.awarded_titles.values_list("id", flat=True)
         applied = (
             self.applied_titles.values_list("id", flat=True)
@@ -1176,33 +1178,39 @@ class TitleFilter(BaseFilter):
         )
 
         res = (
-            Member.objects.select_related(
-                "main_character__next_member", "main_character__next_character"
+            User.objects.select_related(
+                "profile__main_character__next_member",
+                "profile__main_character__next_character",
             )
-            .filter(main_character__character_ownership__user__in=users)
+            .filter(id__in=users)
             .values(
-                "main_character__character_ownership__user",
-                "main_character",
-                "main_character__character_name",
-                "awarded_title",
-                "main_character__next_character__applied_title",
+                "profile__main_character__character_ownership__user",
+                "profile__main_character",
+                "profile__main_character__character_name",
+                "profile__main_character__next_member__awarded_title",
+                "profile__main_character__next_character__applied_title",
             )
         )
 
+        logger.debug("Res: %s", res)
         out = {}
         for row in res:
             check = False
-            if row["awarded_title"] in awarded:
+            if row["profile__main_character__next_member__awarded_title"] in awarded:
                 check = True
                 if applied:
-                    if row["main_character__next_character__applied_title"] in applied:
+                    if (
+                        row["profile__main_character__next_character__applied_title"]
+                        in applied
+                    ):
                         check = True
                     else:
                         check = False
 
-            out[row["main_character__character_ownership__user"]] = {
-                "message": f"{row['main_character__character_name']}: {row['awarded_title']} - {row['main_character__next_character__applied_title']}",
+            out[row["profile__main_character__character_ownership__user"]] = {
+                "message": f"{row['profile__main_character__character_name']}: {row['profile__main_character__next_member__awarded_title']} - {row['profile__main_character__next_character__applied_title']}",
                 "check": check,
             }
 
+        logger.debug("Out: %s", out)
         return out
