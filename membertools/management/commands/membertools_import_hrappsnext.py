@@ -92,7 +92,12 @@ class Command(BaseCommand):
         for app in HRNApplication.objects.all():
             char, created = Character.objects.update_or_create(
                 eve_character__character_id=app.character.character_id,
-                defaults={"eve_character": app.character},
+                defaults={
+                    "eve_character": app.character,
+                    "corporation": app.character.corporation,
+                    "alliance": app.character.alliance,
+                    "faction": app.character.faction,
+                },
             )
             if app.approved is not None:
                 status = Application.STATUS_CLOSED
