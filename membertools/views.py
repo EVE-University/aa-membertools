@@ -1090,6 +1090,7 @@ def hr_admin_approve_action(request, tokens, app_id):
             app.status = Application.STATUS_PROCESSED
             app.decision = Application.DECISION_ACCEPT
             app.decision_on = timezone.now()
+            app.decision_by = request.user.profile.main_character
 
             # Title accepts have a few extra steps.
             if app.form.title:
