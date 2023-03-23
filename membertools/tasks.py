@@ -10,6 +10,7 @@ from bravado.exception import (
     HTTPGatewayTimeout,
     HTTPServiceUnavailable,
     HTTPNotFound,
+    HTTPInternalServerError,
 )
 
 from django.db.models import Q
@@ -208,6 +209,15 @@ def update_character(self, character_id, force=False):
             logger.debug("Character has been biomassed.")
             update_status.character.deleted = True
             update_status.character.save()
+    except (
+        HTTPServiceUnavailable,
+        HTTPInternalServerError,
+        HTTPBadGateway,
+        HTTPGatewayTimeout,
+    ) as ex:
+        update_status.status = CharacterUpdateStatus.STATUS_ERROR
+        update_status.expires_on = timezone.now() + timedelta(hours=24)
+        logger.info("%s: %s", type(ex).__name__, ex)
     except Exception as ex:
         update_status.status = CharacterUpdateStatus.STATUS_ERROR
         logger.error("%s: %s", type(ex).__name__, ex)
