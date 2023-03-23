@@ -50,8 +50,14 @@ def corp_change_hook(instance, **kwargs):
         return
     old_instance = Character.objects.get(id=instance.id)
 
-    if instance.corporation.corporation_id == old_instance.corporation.corporation_id:
-        # No corp change, so nothing to do.
+    try:
+        if (
+            instance.corporation.corporation_id
+            == old_instance.corporation.corporation_id
+        ):
+            # No corp change, so nothing to do.
+            return
+    except AttributeError:
         return
 
     logger.info(
