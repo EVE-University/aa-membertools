@@ -1,7 +1,12 @@
 from django.apps import apps
 from django.db import transaction
 
-from allianceauth.eveonline.models import EveCharacter
+from allianceauth.eveonline.models import (
+    EveCharacter,
+    EveCorporationInfo,
+    EveAllianceInfo,
+    EveFactionInfo,
+)
 
 from membertools.app_settings import MEMBERTOOLS_MAIN_CORP_ID
 from membertools.models import (
@@ -90,13 +95,28 @@ class Command(BaseCommand):
         HRNApplicationComment = apps.get_model("hrappsnext", "ApplicationComment")
 
         for app in HRNApplication.objects.all():
+            try:
+                corp = app.character.corporation
+            except EveCorporationInfo.DoesNotExist:
+                corp = EveCorporationInfo.objects.create_corporation(
+                    app.character.corporation_id
+                )
+
+            try:
+                faction = app.character.faction
+            except EveFactionInfo.DoesNotExist:
+                faction = EveFactionInfo.objects.create(
+                    faction_id=app.character.faction_id,
+                    faction_name=app.character.faction_name,
+                )
+
             char, created = Character.objects.update_or_create(
                 eve_character__character_id=app.character.character_id,
                 defaults={
                     "eve_character": app.character,
-                    "corporation": app.character.corporation,
-                    "alliance": app.character.alliance,
-                    "faction": app.character.faction,
+                    "corporation": corp,
+                    "alliance": corp.alliance,
+                    "faction": faction,
                 },
             )
             if app.approved is not None:
