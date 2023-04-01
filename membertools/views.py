@@ -383,7 +383,7 @@ def hr_app_remove(request, app_id):
             )
     else:
         logger.warning("User %s not authorized to delete %s", request.user, app)
-        return HttpResponseForbidden
+        return HttpResponseForbidden(_("You do not have permission to do that."))
 
     return redirect("membertools:index")
 
@@ -587,7 +587,7 @@ def hr_admin_view(request, app_id, comment_form=None, edit_comment=None):
         )
     else:
         logger.warn(f"User {request.user} not authorized to view {app}")
-        return HttpResponseNotAllowed
+        return HttpResponseNotAllowed(_("You do not have permission to do that."))
 
 
 @login_required
@@ -706,7 +706,7 @@ def hr_admin_char_detail_lookup(request, char_id):
     char_id = int(char_id)
 
     if not char_id:
-        return HttpResponseBadRequest()
+        return HttpResponseBadRequest(_("Bad Request"))
 
     try:
         detail = Character.objects.get(eve_character__character_id=char_id)
@@ -1035,7 +1035,7 @@ def hr_admin_approve_action(request, tokens, app_id):
             request.user,
             app.form,
         )
-        return HttpResponseForbidden
+        return HttpResponseForbidden(_("You do not have permission to do that."))
 
     if is_override and not is_manager:
         logger.warning(
@@ -1044,7 +1044,7 @@ def hr_admin_approve_action(request, tokens, app_id):
             app.form,
         )
 
-        return HttpResponseForbidden
+        return HttpResponseForbidden(_("You do not have permission to do that."))
 
     if app.status != Application.STATUS_REVIEW:
         messages.add_message(
@@ -1199,7 +1199,7 @@ def hr_admin_wait_action(request, app_id):
             request.user,
             app.form,
         )
-        return HttpResponseForbidden
+        return HttpResponseForbidden(_("You do not have permission to do that."))
 
     if not app.reviewer:
         messages.add_message(
@@ -1219,7 +1219,7 @@ def hr_admin_wait_action(request, app_id):
             app.id,
         )
 
-        return HttpResponseForbidden
+        return HttpResponseForbidden(_("You do not have permission to do that."))
 
     if app.status != Application.STATUS_REVIEW:
         messages.add_message(
@@ -1285,7 +1285,7 @@ def hr_admin_reject_action(request, tokens, app_id):
             request.user,
             app.form,
         )
-        return HttpResponseForbidden
+        return HttpResponseForbidden(_("You do not have permission to do that."))
 
     if is_override and not is_manager:
         logger.warning(
@@ -1293,7 +1293,7 @@ def hr_admin_reject_action(request, tokens, app_id):
             request.user,
             app.form,
         )
-        return HttpResponseForbidden
+        return HttpResponseForbidden(_("You do not have permission to do that."))
 
     if app.status != Application.STATUS_REVIEW:
         messages.add_message(
@@ -1394,7 +1394,7 @@ def hr_admin_withdraw_action(request, app_id):
             request.user,
             app.form,
         )
-        return HttpResponseForbidden
+        return HttpResponseForbidden(_("You do not have permission to do that."))
 
     if is_override and not is_manager:
         logger.warning(
@@ -1402,7 +1402,7 @@ def hr_admin_withdraw_action(request, app_id):
             request.user,
             app.form,
         )
-        return HttpResponseForbidden
+        return HttpResponseForbidden(_("You do not have permission to do that."))
 
     if app.status != Application.STATUS_REVIEW:
         messages.add_message(
@@ -1480,7 +1480,7 @@ def hr_admin_close_action(request, app_id):
             request.user,
             app.form,
         )
-        return HttpResponseForbidden
+        return HttpResponseForbidden(_("You do not have permission to do that."))
 
     if app.status != Application.STATUS_PROCESSED:
         messages.add_message(
@@ -1560,7 +1560,7 @@ def hr_admin_comment_create(request, app_id):
                 application,
                 application.character,
             )
-            return HttpResponseBadRequest()
+            return HttpResponseBadRequest(_("Bad Request"))
 
         comment: Comment = form.instance
         comment.poster = request.user.profile.main_character
@@ -1607,7 +1607,9 @@ def hr_admin_comment_edit(request, app_id, comment_id):
                     request.user,
                     comment.id,
                 )
-                return HttpResponseForbidden()
+                return HttpResponseForbidden(
+                    _("You do not have permission to do that.")
+                )
             elif (
                 timezone.now() >= comment.created + MEMBERTOOLS_COMMENT_SELF_EDIT_TIME
                 and not has_edit_comment
@@ -1636,7 +1638,9 @@ def hr_admin_comment_edit(request, app_id, comment_id):
                     form_app.form.is_user_recruiter(request.user),
                 )
 
-                return HttpResponseForbidden()
+                return HttpResponseForbidden(
+                    _("You do not have permission to do that.")
+                )
 
             form.save()
 
@@ -1672,7 +1676,7 @@ def hr_admin_comment_delete(request, app_id, comment_id):
             "User %s called delete comment for an app from a form they don't recruit.",
             request.user,
         )
-        return HttpResponseForbidden()
+        return HttpResponseForbidden(_("You do not have permission to do that."))
 
     has_delete_comment = request.user.has_perm(
         "membertools.delete_comment"
@@ -1687,7 +1691,7 @@ def hr_admin_comment_delete(request, app_id, comment_id):
             request.user,
             comment.id,
         )
-        return HttpResponseForbidden()
+        return HttpResponseForbidden(_("You do not have permission to do that."))
 
     if (
         timezone.now() >= comment.created + MEMBERTOOLS_COMMENT_SELF_DELETE_TIME
@@ -1772,7 +1776,7 @@ def hr_admin_char_detail_comment_create(request, char_id):
                 app.character,
                 detail.eve_character,
             )
-            return HttpResponseForbidden()
+            return HttpResponseForbidden(_("You do not have permission to do that."))
 
         return redirect("membertools_admin:char_detail_view", char_id)
 
@@ -1813,7 +1817,9 @@ def hr_admin_char_detail_comment_edit(request, char_id, comment_id):
                     request.user,
                     comment.id,
                 )
-                return HttpResponseForbidden()
+                return HttpResponseForbidden(
+                    _("You do not have permission to do that.")
+                )
             if (
                 timezone.now() >= comment.created + MEMBERTOOLS_COMMENT_SELF_EDIT_TIME
                 and not has_edit_comment
@@ -1841,7 +1847,9 @@ def hr_admin_char_detail_comment_edit(request, char_id, comment_id):
                     app.form.is_user_recruiter(request.user),
                 )
 
-                return HttpResponseForbidden()
+                return HttpResponseForbidden(
+                    _("You do not have permission to do that.")
+                )
 
             form.save()
 
@@ -1885,7 +1893,7 @@ def hr_admin_char_detail_comment_delete(request, char_id, comment_id):
             request.user,
             comment.id,
         )
-        return HttpResponseForbidden()
+        return HttpResponseForbidden(_("You do not have permission to do that."))
 
     if (
         timezone.now() >= comment.created + MEMBERTOOLS_COMMENT_SELF_DELETE_TIME
