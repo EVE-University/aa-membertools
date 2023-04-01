@@ -22,14 +22,14 @@ def comment_actions(context, comment: Comment):
     user: User = context["user"]
     edit_cutoff = timezone.now() - MEMBERTOOLS_COMMENT_SELF_EDIT_TIME
     del_cutoff = timezone.now() - MEMBERTOOLS_COMMENT_SELF_DELETE_TIME
-    if user.has_perm("membertools.edit_comment") or (
-        comment.poster == user and comment.created > edit_cutoff
+    if user.has_perm("membertools.change_comment") or (
+        comment.poster == user.profile.main_character and comment.created > edit_cutoff
     ):
         comment.can_edit = True
     else:
         comment.can_edit = False
     if user.has_perm("membertools.delete_comment") or (
-        comment.poster == user and comment.created > del_cutoff
+        comment.poster == user.profile.main_character and comment.created > del_cutoff
     ):
         comment.can_delete = True
     else:
