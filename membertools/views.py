@@ -81,7 +81,7 @@ def get_user_characters(request, character):
     return characters
 
 
-def is_form_recruiter(form, user, perm="membertools.approve_application") -> bool:
+def is_form_recruiter(form, user, perm="membertools.review_application") -> bool:
     """Returns true if user is superuser or belongs to a group in the recruiter_groups list for the form."""
     if user.is_superuser:
         return True
@@ -817,7 +817,7 @@ def hr_admin_start_review_action(request, app_id):
             request.user,
             app.form,
         )
-        return HttpResponseForbidden
+        return HttpResponseForbidden(_("You do not have permission to do that"))
 
     if app.reviewer and is_override and not is_manager:
         logger.warning(
@@ -825,7 +825,7 @@ def hr_admin_start_review_action(request, app_id):
             request.user,
             app.form,
         )
-        return HttpResponseForbidden
+        return HttpResponseForbidden(_("You do not have permission to do that"))
 
     if app.status not in [
         Application.STATUS_NEW,
@@ -1009,7 +1009,7 @@ def hr_admin_release_action(request, app_id):
         "membertools.admin_access",
         "membertools.application_admin_access",
         "membertools.view_application",
-        "membertools.approve_application",
+        "membertools.review_application",
     ]
 )
 @tokens_required(["esi-location.read_online.v1", "esi-ui.open_window.v1"])
