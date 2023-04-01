@@ -24,7 +24,7 @@
         {% for form in available_forms %}
             <tr>
                 <td class="text-center col-md-3">{{ form }}</td>
-                <td class="text-center">Description here</td>
+                <td class="text-center">{{ form.description }}</td>
                 <td class="text-center">
                     <a href="{% url 'membertools:create' form.id %}" class="btn btn-success">
                         Apply
