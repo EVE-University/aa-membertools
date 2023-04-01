@@ -165,21 +165,21 @@ class ApplicationForm(models.Model):
             return True
         return self.auditor_groups.filter(
             authgroup__in=user.groups.values_list("pk").all()
-        )
+        ).exists()
 
     def is_user_recruiter(self, user):
         if user.is_superuser:
             return True
         return self.recruiter_groups.filter(
             authgroup__in=user.groups.values_list("pk").all()
-        )
+        ).exists()
 
     def is_user_manager(self, user):
         if user.is_superuser:
             return True
         return self.manager_groups.filter(
             authgroup__in=user.groups.values_list("pk").all()
-        )
+        ).exists()
 
     def get_user_eligible_chars(self, user):
         logger.debug("get_user_eligible_chars(): User: %s Form: %s", user, self)
