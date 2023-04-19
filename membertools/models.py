@@ -126,23 +126,50 @@ class ApplicationForm(models.Model):
         EveCorporationInfo, on_delete=models.CASCADE, related_name="next_forms"
     )
     title = models.ForeignKey(
-        ApplicationTitle, on_delete=models.PROTECT, blank=True, null=True
+        ApplicationTitle,
+        on_delete=models.PROTECT,
+        blank=True,
+        null=True,
     )
-    description = models.TextField(max_length=2048, blank=True, null=True)
+    description = models.TextField(
+        max_length=2048,
+        blank=True,
+        null=True,
+    )
+    require_awarded = models.BooleanField(
+        default=False,
+        verbose_name="Require Awarded Titles",
+    )
     allow_awarded = models.ManyToManyField(
-        ApplicationTitle, related_name="awarded", verbose_name="Allowed Awarded Titles"
+        ApplicationTitle,
+        blank=True,
+        related_name="+",
+        verbose_name="Awarded Titles",
+    )
+    require_applied = models.BooleanField(
+        default=False,
+        verbose_name="Require Applied Titles",
     )
     allow_applied = models.ManyToManyField(
-        ApplicationTitle, related_name="applied", verbose_name="Allowed Applied Titles"
+        ApplicationTitle,
+        blank=True,
+        related_name="+",
+        verbose_name="Applied Titles",
     )
     auditor_groups = models.ManyToManyField(
-        Group, related_name="next_form_auditor_groups", blank=True
+        Group,
+        related_name="next_form_auditor_groups",
+        blank=True,
     )
     recruiter_groups = models.ManyToManyField(
-        Group, related_name="next_form_recruiter_groups", blank=True
+        Group,
+        related_name="next_form_recruiter_groups",
+        blank=True,
     )
     manager_groups = models.ManyToManyField(
-        Group, related_name="next_form_manager_groups", blank=True
+        Group,
+        related_name="next_form_manager_groups",
+        blank=True,
     )
     pre_text = models.TextField(max_length=4096, blank=True, default="")
     post_text = models.TextField(max_length=4096, blank=True, default="")
