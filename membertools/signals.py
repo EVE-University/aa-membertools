@@ -1,13 +1,14 @@
+# Django
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
 from django.utils import timezone
 
+# Alliance Auth
 from allianceauth.authentication.models import UserProfile
+from allianceauth.services.hooks import get_extension_logger
 
 from .app_settings import MEMBERTOOLS_MAIN_CORP_ID
-from .models import ApplicationTitle, Character, Member, _get_app_title_none
-
-from allianceauth.services.hooks import get_extension_logger
+from .models import Character, Member, _get_app_title_none
 
 logger = get_extension_logger(__name__)
 

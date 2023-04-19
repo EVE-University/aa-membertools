@@ -1,34 +1,30 @@
-import pprint
-
+# Standard Library
 from datetime import timedelta
-from dateutil import parser
 
-from celery import shared_task
-
+# Third Party
 from bravado.exception import (
     HTTPBadGateway,
     HTTPGatewayTimeout,
-    HTTPServiceUnavailable,
-    HTTPNotFound,
     HTTPInternalServerError,
+    HTTPNotFound,
+    HTTPServiceUnavailable,
 )
+from celery import shared_task
+from dateutil import parser
 
+# Django
 from django.db.models import Q
-from django.http import HttpResponseNotFound
 from django.utils import timezone
-from pyparsing import Char
 
+# Alliance Auth
 from allianceauth.eveonline.providers import provider as aa_provider
 from allianceauth.services.hooks import get_extension_logger
-from allianceauth.services.tasks import QueueOnce
-
 from esi.errors import DjangoEsiException
 from esi.models import Token
 
 from .app_settings import MEMBERTOOLS_APP_ARCHIVE_TIME
 from .models import Application, Character, CharacterUpdateStatus, Member
 from .providers import esi
-
 
 logger = get_extension_logger(__name__)
 

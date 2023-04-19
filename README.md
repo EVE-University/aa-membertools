@@ -15,9 +15,7 @@ Requires membertools.basic_access to see applicant areas.
 3. Add this app to your installed apps in `/myauth/settings/local.py`:
 
     ```python
-    INSTALLED_APPS += [
-        'membertools'
-    ]
+    INSTALLED_APPS += ["membertools"]
     ```
 
 4. Useful commands after installing.

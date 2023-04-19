@@ -1,3 +1,4 @@
+# Alliance Auth
 from esi.clients import EsiClientProvider
 
 from . import __version__

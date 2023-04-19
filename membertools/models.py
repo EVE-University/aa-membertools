@@ -1,44 +1,41 @@
+# Standard Library
 import ast
 import unicodedata
-
 from datetime import timedelta
-from dateutil import parser
 
-from django.contrib.auth.models import User, Group
-from django.core.exceptions import ObjectDoesNotExist, ValidationError
+# Third Party
+from sortedm2m.fields import SortedManyToManyField
+
+# Django
 from django.apps import apps
+from django.contrib.auth.models import Group, User
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import models
 from django.db.models import Q
-from django.conf import settings
 from django.utils import timezone
 from django.utils.formats import date_format
 from django.utils.functional import cached_property
 from django.utils.html import strip_tags
 from django.utils.translation import gettext_lazy as _
 
-from sortedm2m.fields import SortedManyToManyField
-
+# Alliance Auth
 from allianceauth.authentication.models import CharacterOwnership
-from allianceauth.eveonline.providers import provider as aa_provider
 from allianceauth.eveonline.models import (
-    EveFactionInfo,
     EveAllianceInfo,
     EveCharacter,
     EveCorporationInfo,
+    EveFactionInfo,
 )
-
+from allianceauth.services.hooks import get_extension_logger
 from esi.models import Token
 
-from allianceauth.services.hooks import get_extension_logger
-
 from .app_settings import MEMBERTOOLS_MAIN_CORP_ID
-
 from .managers import (
+    ApplicationActionManager,
     ApplicationFormManager,
     ApplicationManager,
-    ApplicationActionManager,
-    CharacterManager,
     CharacterCorpHistoryManager,
+    CharacterManager,
     MemberManager,
 )
 from .providers import EsiClientProvider
@@ -541,7 +538,7 @@ class Application(models.Model):
             elif self.decision == Application.DECISION_PENDING:
                 self.decision_on = None
 
-        super(Application, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         formatted = date_format(
@@ -672,7 +669,7 @@ class ApplicationAction(models.Model):
         ordering = ["-action_on"]
 
     def __str__(self):
-        return "{} - {}".format(self.application, self.get_action_display())
+        return f"{self.application} - {self.get_action_display()}"
 
 
 class Comment(models.Model):
@@ -933,15 +930,6 @@ class Character(models.Model):
             return None
 
         return character.skillpoints.unallocated
-
-    @cached_property
-    def wallet_balance(self):
-        character = Character._get_ma_character(self.eve_character)
-
-        if not character:
-            return None
-
-        return character.wallet_balance.total
 
     @cached_property
     def wallet_balance(self):

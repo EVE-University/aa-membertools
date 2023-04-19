@@ -30,7 +30,7 @@
                     </div>
                     <div class="form-text text-center text-muted">Please select the character you are applying on. If you do not see your character please <a href="{% url 'authentication:add_character' %}">click here</a> to add it first prior to filling application.</div>
                 </div>
-        
+
                 {% for question in questions %}
                     <div class="form-group">
                         <label class="control-label" for="id_{{ question.pk }}">{{ question.title }}</label>

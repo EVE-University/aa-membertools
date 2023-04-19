@@ -1,14 +1,19 @@
-import humanize
+# Standard Library
 import unicodedata
 
-from datetime import timedelta
-from email import message
+# Third Party
+import humanize
 
+# Django
 from django.apps import apps
-from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
-from django.core.paginator import Paginator
 from django.conf import settings
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required, permission_required
+from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
+from django.core.paginator import Paginator
+from django.db import IntegrityError, transaction
+from django.db.models import Q
+from django.forms import ValidationError
 from django.http import (
     HttpRequest,
     HttpResponse,
@@ -16,49 +21,41 @@ from django.http import (
     HttpResponseForbidden,
     HttpResponseNotAllowed,
 )
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth.decorators import permission_required
-from django.contrib.auth.decorators import user_passes_test
-from django.forms import ValidationError
-from django.shortcuts import render, get_object_or_404, redirect, Http404
-from django.db import transaction, IntegrityError, ProgrammingError
-from django.db.models import Q
+from django.shortcuts import Http404, get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.formats import date_format
-from django.utils.html import format_html
-from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
-from esi.decorators import token_required, tokens_required
-from esi.clients import EsiClientProvider
 
-from allianceauth.notifications import notify
+# Alliance Auth
 from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.models import EveCharacter
+from allianceauth.notifications import notify
 from allianceauth.services.hooks import get_extension_logger
-
-from .app_settings import (
-    MEMBERTOOLS_MAIN_CORP_ID,
-    MEMBERTOOLS_APP_ARCHIVE_TIME,
-    MEMBERTOOLS_APP_NAME,
-    MEMBERTOOLS_ADMIN_NAME,
-    MEMBERTOOLS_COMMENT_SELF_EDIT_TIME,
-    MEMBERTOOLS_COMMENT_SELF_DELETE_TIME,
-)
-
-from .models import Application, ApplicationAction, Character, Member
-from .models import Comment
-from .models import ApplicationForm
-from .models import ApplicationResponse
-
-
-from .forms import CommentForm, SearchForm
-
-from .checks import Check
-
-from .helpers import open_newmail_window_from_template
+from esi.clients import EsiClientProvider
+from esi.decorators import tokens_required
 
 from . import tasks
+from .app_settings import (
+    MEMBERTOOLS_ADMIN_NAME,
+    MEMBERTOOLS_APP_ARCHIVE_TIME,
+    MEMBERTOOLS_APP_NAME,
+    MEMBERTOOLS_COMMENT_SELF_DELETE_TIME,
+    MEMBERTOOLS_COMMENT_SELF_EDIT_TIME,
+    MEMBERTOOLS_MAIN_CORP_ID,
+)
+from .checks import Check
+from .forms import CommentForm, SearchForm
+from .helpers import open_newmail_window_from_template
+from .models import (
+    Application,
+    ApplicationAction,
+    ApplicationForm,
+    ApplicationResponse,
+    Character,
+    Comment,
+    Member,
+)
 
 logger = get_extension_logger(__name__)
 esi = EsiClientProvider()
@@ -67,7 +64,7 @@ esi = EsiClientProvider()
 def get_user_characters(request, character):
     # If character is unowned, just return character
     try:
-        user = character.character_ownership.user
+        character.character_ownership.user
     except ObjectDoesNotExist:
         return [character]
 
@@ -586,7 +583,7 @@ def hr_admin_view(request, app_id, comment_form=None, edit_comment=None):
             hr_admin_add_shared_context(request, context),
         )
     else:
-        logger.warn(f"User {request.user} not authorized to view {app}")
+        logger.warning(f"User {request.user} not authorized to view {app}")
         return HttpResponseNotAllowed(_("You do not have permission to do that."))
 
 
@@ -654,7 +651,7 @@ def hr_admin_char_detail_view(
     detail = get_object_or_404(Character, pk=char_detail_id)
 
     context = {
-        "page_title": "View Character: {}".format(detail.eve_character),
+        "page_title": f"View Character: {detail.eve_character}",
         "sub_title": "Last Modified: {} \u2014 Expires: {}".format(
             date_format(
                 detail.update_status.last_modified_on,
@@ -1119,9 +1116,7 @@ def hr_admin_approve_action(request, tokens, app_id):
         notify(
             app.user,
             "Application Accepted",
-            message=_(
-                "Your application for %(form)s has been approved." % {"form": app.form}
-            ),
+            message=_(f"Your application for {app.form} has been approved."),
             level="success",
         )
 
@@ -1878,7 +1873,8 @@ def hr_admin_char_detail_comment_edit(request, char_id, comment_id):
 def hr_admin_char_detail_comment_delete(request, char_id, comment_id):
     logger.debug("Comment Delete: CDid: %s - Cid: %s", char_id, comment_id)
 
-    detail = get_object_or_404(Character, pk=char_id)
+    # We only need to make sure the Character exists
+    get_object_or_404(Character, pk=char_id)
     comment = get_object_or_404(Comment, pk=comment_id)
 
     # TODO: Add delete confirmation...

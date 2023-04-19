@@ -1,10 +1,11 @@
+# Django
 from django import forms
-
 from django.utils.translation import gettext_lazy as _
 
-from .models import Application, Comment
-
+# Alliance Auth
 from allianceauth.services.hooks import get_extension_logger
+
+from .models import Application, Comment
 
 logger = get_extension_logger(__name__)
 
@@ -15,7 +16,7 @@ class CommentForm(forms.ModelForm):
         fields = ["application", "text"]
 
     def __init__(self, detail, *args, **kwargs):
-        super(CommentForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields["application"].queryset = Application.objects.filter(
             character=detail
         )
@@ -34,7 +35,7 @@ class SearchForm(forms.Form):
     def __init__(self, *args, **kwargs):
         placeholder = kwargs.pop("placeholder")
 
-        super(SearchForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         if placeholder:
             self.fields["search"].widget.attrs["placeholder"] = placeholder

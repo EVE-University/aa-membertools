@@ -1,19 +1,15 @@
-from django.utils.translation import gettext_lazy as _
-
+# Alliance Auth
 from allianceauth import hooks
-from allianceauth.services.hooks import MenuItemHook, UrlHook
+from allianceauth.services.hooks import MenuItemHook, UrlHook, get_extension_logger
 
+from . import urls_admin, urls_app
 from .app_settings import (
-    MEMBERTOOLS_APP_BASE_URL,
     MEMBERTOOLS_ADMIN_BASE_URL,
-    MEMBERTOOLS_APP_MENU_TITLE,
     MEMBERTOOLS_ADMIN_MENU_TITLE,
+    MEMBERTOOLS_APP_BASE_URL,
+    MEMBERTOOLS_APP_MENU_TITLE,
 )
-from . import urls_app, urls_admin
-
 from .models import Application, TitleFilter
-
-from allianceauth.services.hooks import get_extension_logger
 
 logger = get_extension_logger(__name__)
 
@@ -86,7 +82,7 @@ class ApplicationsUrls(UrlHook):
             self,
             urls_app,
             "membertools",
-            r"^{base_url}/".format(base_url=MEMBERTOOLS_APP_BASE_URL),
+            rf"^{MEMBERTOOLS_APP_BASE_URL}/",
         )
 
 
@@ -96,7 +92,7 @@ class AdminUrls(UrlHook):
             self,
             urls_admin,
             "membertools_admin",
-            r"^{base_url}/".format(base_url=MEMBERTOOLS_ADMIN_BASE_URL),
+            rf"^{MEMBERTOOLS_ADMIN_BASE_URL}/",
         )
 
 

@@ -1,5 +1,10 @@
+# Standard Library
 import os
+
+# Third Party
 from setuptools import find_packages, setup
+
+# AA EVE Uni Core
 from membertools import __version__
 
 # read the contents of your README file

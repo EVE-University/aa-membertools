@@ -1,9 +1,10 @@
+# Django
 from django.contrib.auth.models import User
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 
-from membertools.models import Member, Character
-
+# AA EVE Uni Core
 from membertools.app_settings import MEMBERTOOLS_MAIN_CORP_ID
+from membertools.models import Character, Member
 
 
 class Command(BaseCommand):

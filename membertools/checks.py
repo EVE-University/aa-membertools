@@ -1,14 +1,14 @@
+# Django
 from django.apps import apps
 from django.conf import settings
 from django.http import HttpRequest
 from django.utils.translation import gettext_lazy as _
-from allianceauth.eveonline.models import EveCharacter
 
+# Alliance Auth
+from allianceauth.eveonline.models import EveCharacter
 from allianceauth.services.hooks import get_extension_logger
 
 logger = get_extension_logger(__name__)
-
-from .models import Application
 
 
 class Check:

@@ -1,19 +1,20 @@
-from django.forms import ModelForm
+# Django
 from django.contrib import admin
 from django.contrib.admin.widgets import AdminTextInputWidget
+from django.forms import ModelForm
 
 from .models import (
     Application,
+    ApplicationAction,
     ApplicationChoice,
-    Comment,
     ApplicationForm,
     ApplicationQuestion,
     ApplicationResponse,
     ApplicationTitle,
-    ApplicationAction,
-    Member,
     Character,
     CharacterUpdateStatus,
+    Comment,
+    Member,
     TitleFilter,
 )
 
@@ -24,11 +25,12 @@ class MemberDetailAdmin(admin.ModelAdmin):
     readonly_fields = ["first_joined", "last_joined"]
     search_fields = ["user__profile__main_character__character_name", "user"]
 
+    @admin.display(
+        description="Main Char.",
+        ordering="user__profile__main_character__character_name",
+    )
     def get_main(self, obj):
         return obj.main_character
-
-    get_main.admin_order_field = "user__profile__main_character__character_name"
-    get_main.short_description = "Main Char."
 
 
 @admin.register(Character)
@@ -99,7 +101,7 @@ class ApplicationFormForm(ModelForm):
         fields = "__all__"
 
     def __init__(self, *args, **kwargs):
-        super(ApplicationFormForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields["title"].widget.can_delete_related = False
         self.fields["title"].widget.can_change_related = False
 
@@ -176,19 +178,21 @@ class ApplicationActionAdmin(admin.ModelAdmin):
     ]
     search_fields = ["application__character", "action_by", "override_by"]
 
+    @admin.display(
+        description="Character",
+        ordering="application__character",
+    )
     def get_character(self, obj):
         return obj.application.character
 
-    get_character.admin_order_field = "application__character"
-    get_character.short_description = "Character"
-
+    @admin.display(
+        description="form",
+        ordering="application__form",
+    )
     def get_appform(self, obj):
         if obj.application.form.title:
             return f"{obj.application.form.corp}: {obj.application.form.title}"
         return f"{obj.application.form.corp}"
-
-    get_appform.admin_order_field = "application__form"
-    get_appform.short_description = "form"
 
 
 @admin.register(CharacterUpdateStatus)

@@ -1,18 +1,19 @@
+# Standard Library
 import ast
+from typing import List, Optional
 
-from typing import Optional, List
-
-from django.contrib.auth.models import User
+# Django
 from django.apps import apps
+from django.contrib.auth.models import User
 from django.db import models, transaction
-from django.db.models import Q, Case, When, F
+from django.db.models import Case, Q, When
 from django.utils import timezone
+
+# Alliance Auth
 from allianceauth.eveonline.models import EveCorporationInfo
+from allianceauth.services.hooks import get_extension_logger
 
 from .app_settings import MEMBERTOOLS_APP_ARCHIVE_TIME
-from .providers import esi
-
-from allianceauth.services.hooks import get_extension_logger
 
 logger = get_extension_logger(__name__)
 

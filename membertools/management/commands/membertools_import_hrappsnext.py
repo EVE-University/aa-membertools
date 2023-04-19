@@ -1,25 +1,25 @@
+# Django
 from django.apps import apps
+from django.core.management.base import BaseCommand
 from django.db import transaction
 
+# Alliance Auth
 from allianceauth.eveonline.models import (
     EveCharacter,
     EveCorporationInfo,
-    EveAllianceInfo,
     EveFactionInfo,
 )
 
-from membertools.app_settings import MEMBERTOOLS_MAIN_CORP_ID
+# AA EVE Uni Core
 from membertools.models import (
-    ApplicationQuestion,
+    Application,
     ApplicationChoice,
     ApplicationForm,
-    Application,
+    ApplicationQuestion,
     ApplicationResponse,
     Character,
     Comment,
 )
-
-from django.core.management.base import BaseCommand, CommandError
 
 
 class Command(BaseCommand):

@@ -1,5 +1,7 @@
+# Standard Library
 import string
 
+# Alliance Auth
 from esi.models import Token
 
 from .tasks import open_newmail_window

@@ -1,8 +1,11 @@
+# Standard Library
 from datetime import timedelta
 
+# Django
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 
+# Alliance Auth (External Libs)
 from app_utils.django import clean_setting
 
 MEMBERTOOLS_MAIN_CORP_ID = clean_setting(

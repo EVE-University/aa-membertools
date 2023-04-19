@@ -1,15 +1,16 @@
-from datetime import timedelta
+# Django
 from django import template
 from django.contrib.auth.models import User
-from django.template.defaultfilters import stringfilter
 from django.utils import timezone
+
+# Alliance Auth
 from allianceauth.services.hooks import get_extension_logger
 
-from ..models import Comment
 from ..app_settings import (
-    MEMBERTOOLS_COMMENT_SELF_EDIT_TIME,
     MEMBERTOOLS_COMMENT_SELF_DELETE_TIME,
+    MEMBERTOOLS_COMMENT_SELF_EDIT_TIME,
 )
+from ..models import Comment
 
 logger = get_extension_logger(__name__)
 register = template.Library()
