@@ -8,6 +8,7 @@ import django.db.models.deletion
 import django.utils.timezone
 from django.db import migrations, models
 
+# EVE Uni Member Tools
 # AA EVE Uni Core
 import membertools.models
 
