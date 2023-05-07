@@ -4,7 +4,7 @@
 {% load i18n %}
 
 {% block inside_content %}
-{% if recruiter_forms %}
+{% if perm.membertools.review_applications and recruiter_forms %}
 <div class="panel panel-primary">
     <div class="panel-heading"><b>{% translate "Your Active Applications" %}</b></div>
     {% if user_review_applications %}

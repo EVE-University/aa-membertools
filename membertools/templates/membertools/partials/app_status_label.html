@@ -2,11 +2,11 @@
 {% endcomment %}
 {% load i18n %}
 {% if application.decision == application.DECISION_ACCEPT %}
-<span class="label label-success">{{ app.get_decision_display }}</span>
+<span class="label label-success"  title="{{ app.get_decision_message }}">{{ app.get_decision_display }}</span>
 {% elif application.decision == application.DECISION_REJECT %}
-<span class="label label-danger">{{ app.get_decision_display }}</span>
-{% elif application.status == application.DECISION_PENDING %}
-<span class="label label-warning">{{ app.get_decision_display }}</span>
+<span class="label label-danger"  title="{{ app.get_decision_message }}">{{ app.get_decision_display }}</span>
+{% elif application.decision == application.DECISION_WITHDRAW %}
+<span class="label label-warning"  title="{{ app.get_decision_message }}">{{ app.get_decision_display }}</span>
 {% else %}
-<span class="label label-info">{{ app.get_status_display }}</span>
+<span class="label label-info" title="{{ app.get_status_message }}">{{ app.get_status_display }}</span>
 {% endif %}

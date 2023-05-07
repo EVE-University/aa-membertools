@@ -148,7 +148,6 @@ def hr_admin_add_shared_context(request, context: dict) -> dict:
 @login_required
 @permission_required("membertools.basic_access")
 def hr_app_dashboard_view(request):
-    cutoff_date = timezone.now() - MEMBERTOOLS_APP_ARCHIVE_TIME
     current_apps = (
         Application.objects.select_related(
             "eve_character__character_ownership__user",
@@ -157,9 +156,7 @@ def hr_app_dashboard_view(request):
             "form__title",
         )
         .filter(eve_character__character_ownership__user=request.user)
-        .filter(
-            Q(decision=Application.DECISION_PENDING) | Q(decision_on__gte=cutoff_date)
-        )
+        .exclude(status=Application.STATUS_CLOSED)
     )
 
     available_forms = []
@@ -185,17 +182,11 @@ def hr_app_dashboard_view(request):
 @login_required
 @permission_required("membertools.basic_access")
 def hr_app_archive_view(request):
-    cutoff_date = timezone.now() - MEMBERTOOLS_APP_ARCHIVE_TIME
     applications = Application.objects.select_related(
         "eve_character__character_ownership__user", "form", "form__corp", "form__title"
     ).filter(
         eve_character__character_ownership__user=request.user,
-        decision__in=[
-            Application.DECISION_ACCEPT,
-            Application.DECISION_REJECT,
-            Application.DECISION_WITHDRAW,
-        ],
-        decision_on__lte=cutoff_date,
+        status=Application.STATUS_CLOSED,
     )
 
     context = {
@@ -562,7 +553,7 @@ def hr_admin_view(request, app_id, comment_form=None, edit_comment=None):
             "corp_history": details.corporation_history.order_by("-record_id").all(),
             "checks": get_checks(app.user, app.eve_character, request),
             "responses": ApplicationResponse.objects.filter(application=app),
-            "comments": Comment.objects.filter(application=app),
+            "comments": Comment.objects.filter(character=details),
             "edit_comment": edit_comment,
             "comment_form": comment_form
             if comment_form
@@ -672,7 +663,11 @@ def hr_admin_char_detail_view(
         "corp_history": detail.corporation_history.order_by("-record_id").all(),
         "checks": get_checks(detail.user, detail.eve_character, request),
         "characters": get_user_characters(request, detail.eve_character),
-        "comments": Comment.objects.filter(member=detail.member, character=detail),
+        "applications": Application.objects.filter(
+            character=detail,
+            form__in=ApplicationForm.objects.get_forms_for_user(request.user),
+        ),
+        "comments": Comment.objects.filter(character=detail),
         "edit_comment": edit_comment,
         "comment_form": comment_form
         if comment_form

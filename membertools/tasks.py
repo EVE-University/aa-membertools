@@ -62,11 +62,11 @@ def open_newmail_window(self, recipients, subject, body, token_id):
         new_mail={"body": body, "recipients": recipients, "subject": subject}
     )
     call.request_config.also_return_response = True
-
     _, res = call.results()
 
-    if res.status_code != 204:
+    if 200 < res.status_code > 206:
         raise DjangoEsiException
+
     return True
 
 
@@ -91,6 +91,8 @@ def close_expired_apps():
     )
 
     logger.info("Closed %d processed apps", updated)
+
+    return updated
 
 
 @shared_task(**TASK_DEFAULT_KWARGS)

@@ -54,7 +54,7 @@ class AdminMenu(MenuItemHook):
             self.count = app_count if app_count else None
             if app_count >= 2:
                 self.classes = "fas fa-frown text-warning"
-            elif app_count >= 5:
+            if app_count >= 5:
                 self.classes = "fas fa-angry text-danger"
             return MenuItemHook.render(self, request)
 

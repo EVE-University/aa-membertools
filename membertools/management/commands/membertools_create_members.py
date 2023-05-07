@@ -2,9 +2,9 @@
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
 
-# AA EVE Uni Core
+# EVE Uni Member Tools
 from membertools.app_settings import MEMBERTOOLS_MAIN_CORP_ID
-from membertools.models import Character, Member
+from membertools.models import Character, Comment, Member
 
 
 class Command(BaseCommand):
@@ -39,3 +39,5 @@ class Command(BaseCommand):
             for char in char_query:
                 char.member = member
                 char.save()
+
+                Comment.objects.filter(character=char).update(member=member)

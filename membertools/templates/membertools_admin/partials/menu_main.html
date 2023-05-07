@@ -17,9 +17,11 @@
 
         <div class="collapse navbar-collapse" id="membertools-admin-nav-bar">
             <ul class="nav navbar-nav">
+                {% if perms.membertools.queue_admin_access %}
                 <li class="{% navactive request 'membertools_admin:queue' %}">
                     <a href="{% url 'membertools_admin:queue' %}">{% translate "Queue" %}</a>
                 </li>
+                {% endif %}
                 {% if perms.membertools.character_admin_access %}
                 <li class="{% navactive request 'membertools_admin:char_detail_index' %}">
                     <a href="{% url 'membertools_admin:char_detail_index' %}">{% translate "Characters" %}</a>

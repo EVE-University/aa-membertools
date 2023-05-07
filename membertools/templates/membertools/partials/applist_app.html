@@ -4,18 +4,22 @@
 <table class="table">
     <tr>
         <th class="text-center">{% translate "Submitted" %}</th>
+        <th class="text-center">{% translate "Last Status" %}</th>
         <th class="text-center">{% translate "Closed" %}</th>
         <th class="text-center">{% translate "Character" %}</th>
         <th class="text-center">{% translate "Form" %}</th>
+        <th class="text-center">{% translate "Reviewer" %}</th>
         <th class="text-center">{% translate "Status" %}</th>
         <th class="text-center">{% translate "Actions" %}</th>
     </tr>
     {% for app in applications %}
         <tr>
             <td class="text-center">{{ app.submitted_on }}</td>
+            <td class="text-center">{{ app.status_on }}</td>
             <td class="text-center">{{ app.closed_on }}</td>
             <td class="text-center">{{ app.eve_character.character_name }}</td>
             <td class="text-center">{{ app.form }}</td>
+            <td class="text-center">{{ app.reviewer }}</td>
             <td class="text-center">
             {% include "membertools/partials/app_status_label.html" with application=app %}
             </td>
@@ -32,7 +36,7 @@
         </tr>
     {% empty %}
         <tr class="warning">
-            <td colspan="7" class="text-center">No matching applications available.</td>
+            <td colspan="8" class="text-center">No matching applications available.</td>
         </tr>
     {% endfor %}
 </table>

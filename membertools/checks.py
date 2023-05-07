@@ -131,8 +131,6 @@ class Check:
         messages = []
         failed = 0
 
-        print("_do_check_memberaudit")
-
         if apps.is_installed("memberaudit"):
             Character = apps.get_model("memberaudit", "Character")
 

@@ -7,13 +7,10 @@ from django.apps import apps
 from django.contrib.auth.models import User
 from django.db import models, transaction
 from django.db.models import Case, Q, When
-from django.utils import timezone
 
 # Alliance Auth
 from allianceauth.eveonline.models import EveCorporationInfo
 from allianceauth.services.hooks import get_extension_logger
-
-from .app_settings import MEMBERTOOLS_APP_ARCHIVE_TIME
 
 logger = get_extension_logger(__name__)
 
@@ -34,10 +31,20 @@ class ApplicationFormManager(models.Manager):
             default=False,
             output_field=models.BooleanField(),
         )
+        is_manager = Case(
+            When(manager_groups__in=groups, then=True),
+            default=False,
+            output_field=models.BooleanField(),
+        )
         return (
-            self.filter(Q(auditor_groups__in=groups) | Q(recruiter_groups__in=groups))
+            self.filter(
+                Q(auditor_groups__in=groups)
+                | Q(recruiter_groups__in=groups)
+                | Q(manager_groups__in=groups)
+            )
             .annotate(is_auditor=is_auditor)
             .annotate(is_recruiter=is_recruiter)
+            .annotate(is_manager=is_manager)
         )
 
     def get_auditor_forms_for_user(self, user: User) -> Optional[List[models.Model]]:
@@ -64,16 +71,14 @@ class ApplicationManager(models.Manager):
         """Returns recently finished application count for the user"""
         Application = apps.get_model("membertools", "Application")
 
-        cutoff = timezone.now() - MEMBERTOOLS_APP_ARCHIVE_TIME
-
         return Application.objects.filter(
             eve_character__character_ownership__user=user,
+            status=Application.STATUS_PROCESSED,
             decision__in=[
                 Application.DECISION_ACCEPT,
                 Application.DECISION_REJECT,
                 Application.DECISION_WITHDRAW,
             ],
-            closed_on__gte=cutoff,
         ).count()
 
     def new_application_count_for_admin_user(self, user: User) -> Optional[int]:
@@ -89,12 +94,12 @@ class ApplicationManager(models.Manager):
             form__in=ApplicationForm.objects.get_recruiter_forms_for_user(user)
         ).count()
 
-    def pending_application_count_for_admin_user(self, user: User) -> Optional[int]:
+    def wait_application_count_for_admin_user(self, user: User) -> Optional[int]:
         """Returns number of Pending applications visible to the user."""
         Application = apps.get_model("membertools", "Application")
         ApplicationForm = apps.get_model("membertools", "ApplicationForm")
 
-        base_query = self.filter(status=Application.STATUS_PENDING)
+        base_query = self.filter(status=Application.STATUS_WAIT)
         if user.is_superuser:
             return base_query.count()
 
@@ -105,15 +110,22 @@ class ApplicationManager(models.Manager):
 
 class ApplicationActionManager(models.Manager):
     def create_action(
-        self, application, action, user, action_on=None, override_by=None
+        self, application, action, action_by, action_on=None, override_by=None
     ):
-        return self.create(
-            application=application,
-            action=action,
-            action_by=user,
-            action_on=action_on,
-            override_by=override_by,
-        )
+        # Build args this way so we can exclude passing parameters that are None.
+        # As None will override defaults like timezone.now for action_on
+        kwargs = {
+            "application": application,
+            "action": action,
+            "action_by": action_by,
+        }
+
+        if action_on is not None:
+            kwargs["action_on"] = action_on
+        if override_by is not None:
+            kwargs["override_by"] = override_by
+
+        return self.create(**kwargs)
 
 
 class MemberManager(models.Manager):
@@ -163,7 +175,7 @@ class CharacterManager(models.Manager):
 
 
 class CharacterCorpHistoryManager(models.Manager):
-    def update_for_char(self, character, history):
+    def update_char(self, character, history):
         corps = []
         for row in history:
             try:

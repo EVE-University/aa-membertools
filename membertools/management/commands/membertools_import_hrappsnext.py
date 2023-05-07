@@ -10,7 +10,7 @@ from allianceauth.eveonline.models import (
     EveFactionInfo,
 )
 
-# AA EVE Uni Core
+# EVE Uni Member Tools
 from membertools.models import (
     Application,
     ApplicationChoice,

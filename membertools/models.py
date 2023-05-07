@@ -13,6 +13,7 @@ from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from django.utils.formats import date_format
 from django.utils.functional import cached_property
 from django.utils.html import strip_tags
@@ -26,6 +27,7 @@ from allianceauth.eveonline.models import (
     EveCorporationInfo,
     EveFactionInfo,
 )
+from allianceauth.eveonline.providers import FactionMixin
 from allianceauth.services.hooks import get_extension_logger
 from esi.models import Token
 
@@ -38,10 +40,9 @@ from .managers import (
     CharacterManager,
     MemberManager,
 )
-from .providers import EsiClientProvider
+from .providers import esi
 
 logger = get_extension_logger(__name__)
-esi = EsiClientProvider()
 
 
 class General(models.Model):
@@ -76,6 +77,7 @@ class ApplicationChoice(models.Model):
         return self.choice_text
 
 
+# Do not remove the title_none functions until the migrations are squashed
 def _get_app_title_none_id():
     res, _ = ApplicationTitle.objects.get_or_create(name="None", priority=0)
 
@@ -105,15 +107,23 @@ class ApplicationTitle(models.Model):
         return str(self.name)
 
     def __ge__(self, x):
+        if x is None:
+            return False
         return self.priority >= x.priority
 
     def __le__(self, x):
+        if x is None:
+            return False
         return self.priority <= x.priority
 
     def __gt__(self, x):
+        if x is None:
+            return False
         return self.priority > x.priority
 
     def __lt__(self, x):
+        if x is None:
+            return False
         return self.priority < x.priority
 
 
@@ -228,7 +238,6 @@ class ApplicationForm(models.Model):
                 & ~Q(status=Application.DECISION_WITHDRAW)
             )
         )
-        none_title = _get_app_title_none()
 
         owned_chars = [
             co.character for co in CharacterOwnership.objects.filter(user=user)
@@ -239,20 +248,20 @@ class ApplicationForm(models.Model):
             try:
                 main_applied = main_detail.applied_title
             except AttributeError:
-                main_applied = none_title
+                main_applied = None
         except ObjectDoesNotExist:
             main_detail = None
-            main_applied = none_title
+            main_applied = None
 
         try:
             member = main_char.next_character.member
             try:
                 member_awarded = member.awarded_title
             except AttributeError:
-                member_awarded = none_title
+                member_awarded = None
         except ObjectDoesNotExist:
             member = None
-            member_awarded = none_title
+            member_awarded = None
 
         eligible_chars = []
 
@@ -263,10 +272,10 @@ class ApplicationForm(models.Model):
                 try:
                     char_applied = character.applied_title
                 except ObjectDoesNotExist:
-                    char_applied = none_title
+                    char_applied = None
             except ObjectDoesNotExist:
                 character = None
-                char_applied = none_title
+                char_applied = None
 
             logger.debug("C: %s CD: %s CA: %s", eve_char, character, char_applied)
 
@@ -279,13 +288,22 @@ class ApplicationForm(models.Model):
                 continue
 
             # Check if we meet title filters
-            if member_awarded not in self.allow_awarded.all():
-                logger.debug("Doesn't meet form allow_awarded")
-                continue
+            if self.require_awarded:
+                if member_awarded is None and self.allow_awarded.exists():
+                    logger.debug("No awarded with non-empty allow_awarded")
+                    continue
+                elif member_awarded and member_awarded not in self.allow_awarded.all():
+                    print(f"MA: {member_awarded} in {self.allow_awarded.all()}")
+                    logger.debug("Doesn't meet form allow_awarded")
+                    continue
 
-            if char_applied not in self.allow_applied.all():
-                logger.debug("Doesn't meet form allow_applied")
-                continue
+            if self.require_applied:
+                if char_applied is None and self.allow_applied.exists():
+                    logger.debug("No applied with non-empty allow_applied")
+                    continue
+                elif char_applied and char_applied not in self.allow_applied.all():
+                    logger.debug("%s doesn't meet form allow_applied", eve_char)
+                    continue
 
             # Recent app for this char
             query = base_app_query.filter(eve_character=eve_char)
@@ -298,14 +316,15 @@ class ApplicationForm(models.Model):
                 if eve_char != main_char:
                     if self.title > main_applied:
                         logger.debug(
-                            "Alt cannot use title form for a higher title than main has applied"
+                            "%s alt cannot use title form for a higher title than main has applied",
+                            eve_char,
                         )
                         continue
                     elif self.title == char_applied:
                         logger.debug("Alt already has title")
                         continue
                 else:
-                    if self.title <= member_awarded:
+                    if self.title <= member_awarded and self.title == char_applied:
                         logger.debug("Not showing already passed/earned title for main")
                         continue
 
@@ -437,7 +456,7 @@ class Application(models.Model):
             and self.decision != Application.DECISION_PENDING
         ):
             errors["status"] = ValidationError(
-                f"Status cannot be {self.get_status_display()} without a Decision.",
+                f"Status cannot be {self.get_status_display()} with a Decision.",
                 code="invalid",
             )
 
@@ -448,7 +467,8 @@ class Application(models.Model):
             Application.STATUS_CLOSED,
         ]:
             errors["last_status"] = ValidationError(
-                f"Last status cannot be {self.get_status_display()}.", code="invalid"
+                f"Last status cannot be {self.get_last_status_display()}.",
+                code="invalid",
             )
 
         # Decision
@@ -649,7 +669,7 @@ class ApplicationAction(models.Model):
         Application, on_delete=models.CASCADE, related_name="actions"
     )
     action = models.SmallIntegerField(choices=ACTION_CHOICES)
-    action_on = models.DateTimeField(auto_now_add=True)
+    action_on = models.DateTimeField(default=timezone.now)
     action_by = models.ForeignKey(
         EveCharacter,
         on_delete=models.CASCADE,
@@ -712,7 +732,6 @@ class Member(models.Model):
         on_delete=models.PROTECT,
         blank=True,
         null=True,
-        default=_get_app_title_none_id,
     )
     first_joined = models.DateTimeField(blank=True, null=True)
     last_joined = models.DateTimeField(blank=True, null=True)
@@ -752,14 +771,10 @@ class Member(models.Model):
 
     @cached_property
     def characters(self):
-        return [
-            owner.character
-            for owner in self.character_ownership.user.character_ownerships.select_related(
-                "character"
-            ).order_by(
-                "character__corporation_id", "character__character_name"
-            )
-        ]
+        try:
+            return [o.character for o in self.user.character_ownerships.all()]
+        except AttributeError:
+            return [self.main_character]
 
     def update_joined_dates(self, forced=False):
         if not forced and self.first_joined and self.last_joined:
@@ -785,8 +800,8 @@ class Member(models.Model):
         logger.debug("F: %s L: %s", first_join, last_join)
 
         if len(history):
-            self.first_joined = first_join
-            self.last_joined = last_join
+            self.first_joined = parse_datetime(first_join)
+            self.last_joined = parse_datetime(last_join)
             self.save()
 
         logger.debug("MF: %s ML: %s", self.first_joined, self.last_joined)
@@ -794,11 +809,7 @@ class Member(models.Model):
         return True
 
     def __str__(self):
-        return (
-            str(self.main_character.character_name)
-            if self.main_character
-            else f"Unknown Member ({self.id})"
-        )
+        return str(self.main_character.character_name)
 
 
 class Character(models.Model):
@@ -819,7 +830,6 @@ class Character(models.Model):
         on_delete=models.PROTECT,
         blank=True,
         null=True,
-        default=_get_app_title_none_id,
     )
     birthday = models.DateTimeField(null=True)
     corporation = models.ForeignKey(
@@ -877,10 +887,6 @@ class Character(models.Model):
             return None
 
     @cached_property
-    def applications(self):
-        return Application.objects.filter(user=self.user).order_by("pk")
-
-    @cached_property
     def description_text(self):
         desc = self.description.strip()
         if desc == "":
@@ -895,7 +901,7 @@ class Character(models.Model):
             ma_character = MACharacter.objects.get(eve_character=character)
         except LookupError:
             return None
-        except MACharacter.DoesNotExist:
+        except ObjectDoesNotExist:
             return None
 
         return ma_character
@@ -984,8 +990,8 @@ class Character(models.Model):
                 corporation_id=details.get("corporation_id")
             )
         except EveCorporationInfo.DoesNotExist:
-            self.corporation = EveCorporationInfo.objects.create_corporation_obj(
-                details.get("corporation")
+            self.corporation = EveCorporationInfo.objects.create_corporation(
+                details.get("corporation_id")
             )
 
         if details.get("alliance_id"):
@@ -994,8 +1000,8 @@ class Character(models.Model):
                     alliance_id=details.get("alliance_id")
                 )
             except EveAllianceInfo.DoesNotExist:
-                self.alliance = EveAllianceInfo.objects.create_alliance_obj(
-                    details.get("alliance")
+                self.alliance = EveAllianceInfo.objects.create_alliance(
+                    details.get("alliance_id")
                 )
         else:
             self.alliance = None
@@ -1007,13 +1013,17 @@ class Character(models.Model):
                     faction_id=details.get("faction_id")
                 )
             except EveFactionInfo.DoesNotExist:
-                self.faction = EveFactionInfo.objects.create(
-                    faction_id=details.get("faction_id"),
-                    faction_name=details.get("faction").name,
+                self.faction = (
+                    EveFactionInfo.objects.create(
+                        faction_id=details.get("faction_id"),
+                        faction_name=FactionMixin(
+                            faction_id=details.get("faction_id")
+                        ).faction.name,
+                    ),
                 )
         else:
             self.faction = None
-        self.birthday = details.get("birthday")
+        self.birthday = parse_datetime(details.get("birthday"))
         self.description = description
         self.security_status = details.get("security_status")
         self.title = details.get("title")
@@ -1023,7 +1033,7 @@ class Character(models.Model):
 
     def update_corporation_history(self, history):
         logger.debug("update_corporation_history(): %s", self)
-        self.corporation_history.update_for_char(self, history)
+        self.corporation_history.update_char(self, history)
         return True
 
 
@@ -1176,7 +1186,7 @@ class TitleFilter(BaseFilter):
 
         if (
             self.applied_titles.exists()
-            and user_awarded not in self.applied_titles.all()
+            and user_applied not in self.applied_titles.all()
         ):
             logger.debug("Failed on applied")
             return False
@@ -1206,7 +1216,6 @@ class TitleFilter(BaseFilter):
                 "profile__main_character__next_character__applied_title",
             )
         )
-
         logger.debug("Res: %s", res)
         out = {}
         for row in res:
@@ -1223,7 +1232,7 @@ class TitleFilter(BaseFilter):
                         check = False
 
             out[row["profile__main_character__character_ownership__user"]] = {
-                "message": f"{row['profile__main_character__character_name']}: {row['profile__main_character__next_member__awarded_title']} - {row['profile__main_character__next_character__applied_title']}",
+                "message": f"{self.name}: {self.description}",
                 "check": check,
             }
 

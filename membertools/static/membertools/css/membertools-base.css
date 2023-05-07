@@ -29,10 +29,12 @@
 }
 
 .dl-horizontal dt {
+    margin-bottom: 0.75rem;
     text-align: left;
 }
 
 .dl-horizontal dd {
+    margin-bottom: 0.75rem;
     margin-left: 12rem;
 }
 
@@ -63,7 +65,7 @@
 }
 
 .page-header, .page-content {
-    max-width: 120rem;
+    max-width: 180rem;
 }
 
 .comment-row {
