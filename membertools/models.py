@@ -1023,7 +1023,12 @@ class Character(models.Model):
                 )
         else:
             self.faction = None
-        self.birthday = parse_datetime(details.get("birthday"))
+
+        # The Swagger Client already makes this field a datetime type, but tzinfo is wrong.
+        birthday = details.get("birthday")
+        if birthday:
+            birthday.replace(tzinfo=timezone.utc)
+        self.birthday = birthday
         self.description = description
         self.security_status = details.get("security_status")
         self.title = details.get("title")
