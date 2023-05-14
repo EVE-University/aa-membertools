@@ -641,23 +641,33 @@ def hr_admin_char_detail_view(
 ):
     detail = get_object_or_404(Character, pk=char_detail_id)
 
-    context = {
-        "page_title": f"View Character: {detail.eve_character}",
-        "sub_title": "Last Modified: {} \u2014 Expires: {}".format(
-            date_format(
+    if hasattr(detail, "update_status"):
+        if detail.update_status.last_modified_on:
+            last_update_str = date_format(
                 detail.update_status.last_modified_on,
                 format="SHORT_DATETIME_FORMAT",
                 use_l10n=True,
             )
-            if hasattr(detail, "update_status")
-            else "Never",
-            date_format(
+        else:
+            last_update_str = "Never"
+
+        if detail.update_status.expires_on:
+            last_update_str = date_format(
                 detail.update_status.expires_on,
                 format="SHORT_DATETIME_FORMAT",
                 use_l10n=True,
             )
-            if hasattr(detail, "update_status")
-            else "Never",
+        else:
+            expires_on_str = "N/A"
+    else:
+        last_update_str = "Never"
+        expires_on_str = "N/A"
+
+    context = {
+        "page_title": f"View Character: {detail.eve_character}",
+        "sub_title": "Last Modified: {} \u2014 Expires: {}".format(
+            last_update_str,
+            expires_on_str,
         ),
         "char_detail": detail,
         "corp_history": detail.corporation_history.order_by("-record_id").all(),
