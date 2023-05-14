@@ -265,9 +265,7 @@ class Check:
         messages = []
 
         if apps.is_installed("allianceauth.services.modules.mumble"):
-            MumbleUser = apps.get_model(
-                "allianceauth.services.modules.mumble", "MumbleUser"
-            )
+            MumbleUser = apps.get_model("mumble", "MumbleUser")
 
             query = MumbleUser.objects.filter(user=self.user)
 
@@ -303,9 +301,7 @@ class Check:
         messages = []
 
         if apps.is_installed("allianceauth.services.modules.phpbb3"):
-            Phpbb3User = apps.get_model(
-                "allianceauth.services.modules.phpbb3", "Phpbb3User"
-            )
+            Phpbb3User = apps.get_model("phpbb3", "Phpbb3User")
 
             query = Phpbb3User.objects.filter(user=self.user)
 
