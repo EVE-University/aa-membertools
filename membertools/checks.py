@@ -295,27 +295,27 @@ class Check:
         }
 
     def _do_check_phpbb3(self):
-        title = _("PhpBB3")
+        title = _("Forum")
         status = self.CHECK_PASSED
         reason = _("All checks passed")
         messages = []
 
-        if apps.is_installed("allianceauth.services.modules.phpbb3"):
-            Phpbb3User = apps.get_model("phpbb3", "Phpbb3User")
+        if apps.is_installed("eunicore.phpbb3"):
+            Phpbb3User = apps.get_model("euni_phpbb3", "Phpbb3User")
 
             query = Phpbb3User.objects.filter(user=self.user)
 
             if query.exists():
                 messages.append(
                     {
-                        "message": _("PhpBB3 (Forum) account is active"),
+                        "message": _("Forum account is active"),
                         "status": self.CHECK_PASSED,
                     }
                 )
             else:
                 status = self.CHECK_FAILED
                 reason = _(
-                    "PhpBB3 (Forum) account is not active, please reset account in Services"
+                    "Forum account is not active, please reset account in Services"
                 )
                 messages.append({"message": reason, "status": self.CHECK_FAILED})
         else:

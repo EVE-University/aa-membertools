@@ -119,7 +119,7 @@ class TestModelCharacter(TestCase):
         AuthUtils.connect_signals()
 
         cls.esi_details = {
-            "birthday": "2023-01-01T12:00:00Z",
+            "birthday": parse_datetime("2023-01-01T12:00:00"),
             "bloodline_id": 1,
             "corporation_id": 10,
             "description": "Some Description",
@@ -475,7 +475,7 @@ class TestModelCharacter(TestCase):
         self.assertEqual(char.eve_character, self.member_eve_char)
         self.assertEqual(
             char.birthday,
-            parse_datetime(temp_details["birthday"]),
+            temp_details["birthday"],
         )
         self.assertEqual(char.corporation, self.corp)
         self.assertEqual(char.alliance, None)
@@ -655,7 +655,7 @@ class TestModelCharacter(TestCase):
         )
 
         char.update_character_details(self.esi_details)
-        self.assertEqual(char.birthday, parse_datetime(self.esi_details["birthday"]))
+        self.assertEqual(char.birthday, self.esi_details["birthday"])
 
     def test_update_char_details_security_status(self):
         char = Character.objects.create(

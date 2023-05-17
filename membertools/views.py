@@ -105,17 +105,29 @@ def is_form_manager(form, user, perm="membertools.manage_application") -> bool:
 def get_checks(
     user: settings.AUTH_USER_MODEL, character: EveCharacter, request: HttpRequest
 ) -> dict:
-
+    checks_list = [
+        "verified",
+        "memberaudit",
+        "discord",
+        "mumble",
+        "phpbb3",
+    ]
     checks = {}
 
     if user is not None and character is not None:
         check = Check.get_instance(user, character, request)
 
-        checks["verified"] = check.check("verified", user, character)
-        checks["memberaudit"] = check.check("memberaudit", user, character)
-        checks["discord"] = check.check("discord", user, character)
-        checks["mumble"] = check.check("mumble", user, character)
-        checks["phpbb3"] = check.check("phpbb3", user, character)
+        for item in checks_list:
+            result = check.check(item, user, character)
+            if (
+                result["status"] == Check.CHECK_DISABLED
+                and not request.user.is_staff
+                and not request.user.is_superuser
+            ):
+                # Hide checks for not installed apps for non staff/super
+                continue
+
+            checks[item] = result
 
     return checks
 
@@ -652,7 +664,7 @@ def hr_admin_char_detail_view(
             last_update_str = "Never"
 
         if detail.update_status.expires_on:
-            last_update_str = date_format(
+            expires_on_str = date_format(
                 detail.update_status.expires_on,
                 format="SHORT_DATETIME_FORMAT",
                 use_l10n=True,
