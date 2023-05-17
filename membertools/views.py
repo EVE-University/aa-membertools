@@ -652,7 +652,7 @@ def hr_admin_char_detail_view(
             last_update_str = "Never"
 
         if detail.update_status.expires_on:
-            last_update_str = date_format(
+            expires_on_str = date_format(
                 detail.update_status.expires_on,
                 format="SHORT_DATETIME_FORMAT",
                 use_l10n=True,
