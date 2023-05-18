@@ -24,6 +24,7 @@ class Check:
         "discord": "_do_check_discord",
         "mumble": "_do_check_mumble",
         "phpbb3": "_do_check_phpbb3",
+        "euni_phpbb3": "_do_check_euni_phpbb3",
     }
 
     # Format:
@@ -295,6 +296,42 @@ class Check:
         }
 
     def _do_check_phpbb3(self):
+        title = _("phpBB3")
+        status = self.CHECK_PASSED
+        reason = _("All checks passed")
+        messages = []
+
+        if apps.is_installed("allianceauth.services.modules.phpbb3"):
+            Phpbb3User = apps.get_model("phpbb3", "Phpbb3User")
+
+            query = Phpbb3User.objects.filter(user=self.user)
+
+            if query.exists():
+                messages.append(
+                    {
+                        "message": _("PhpBB3 (Forum) account is active"),
+                        "status": self.CHECK_PASSED,
+                    }
+                )
+            else:
+                status = self.CHECK_FAILED
+                reason = _(
+                    "PhpBB3 (Forum) account is not active, please reset account in Services"
+                )
+                messages.append({"message": reason, "status": self.CHECK_FAILED})
+        else:
+            status = self.CHECK_DISABLED
+            reason = _("PhpBB3 service is not enabled")
+            messages.append({"message": reason, "status": self.CHECK_FAILED})
+
+        self._check_cache["phpbb3"] = {
+            "title": title,
+            "status": status,
+            "reason": reason,
+            "messages": messages,
+        }
+
+    def _do_check_euni_phpbb3(self):
         title = _("Forum")
         status = self.CHECK_PASSED
         reason = _("All checks passed")
@@ -323,7 +360,7 @@ class Check:
             reason = _("PhpBB3 service is not enabled")
             messages.append({"message": reason, "status": self.CHECK_FAILED})
 
-        self._check_cache["phpbb3"] = {
+        self._check_cache["euni_phpbb3"] = {
             "title": title,
             "status": status,
             "reason": reason,

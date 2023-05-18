@@ -110,6 +110,7 @@ def get_checks(
         "memberaudit",
         "discord",
         "mumble",
+        "euni_phpbb3",
         "phpbb3",
     ]
     checks = {}
