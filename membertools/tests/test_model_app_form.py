@@ -880,3 +880,39 @@ class TestModelAppForm(TestCase):
             self.title_app_form.get_user_eligible_chars(user),
             [alt_eve_char],
         )
+
+    def test_title_require_awarded_title_with_title_no_character_record(self):
+        self.title_app_form.require_awarded = True
+        self.title_app_form.allow_awarded.add(self.title)
+
+        eve_char = EveCharacter.objects.create(
+            character_id=1,
+            character_name="Member 1",
+            corporation_id=self.corp.corporation_id,
+            corporation_name=self.corp.corporation_name,
+            corporation_ticker=self.corp.corporation_ticker,
+        )
+
+        Member.objects.create(
+            first_main_character=eve_char,
+            main_character=eve_char,
+            awarded_title=self.title,
+        )
+
+        user = AuthUtils.create_user("Applicant_1", disconnect_signals=True)
+
+        AuthUtils.disconnect_signals()
+        user.profile.main_character = eve_char
+        user.profile.save()
+
+        CharacterOwnership.objects.create(
+            user=user,
+            character=eve_char,
+            owner_hash="1",
+        )
+        AuthUtils.connect_signals()
+
+        self.assertEqual(
+            self.title_app_form.get_user_eligible_chars(user),
+            [eve_char],
+        )
