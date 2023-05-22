@@ -21,16 +21,35 @@ from .models import (
 
 @admin.register(Member)
 class MemberDetailAdmin(admin.ModelAdmin):
-    list_display = ["get_main", "user", "awarded_title", "first_joined", "last_joined"]
-    readonly_fields = ["first_joined", "last_joined"]
-    search_fields = ["user__profile__main_character__character_name", "user"]
+    list_display = [
+        "main_character",
+        "first_main_character",
+        "get_user",
+        "awarded_title",
+        "first_joined",
+        "last_joined",
+    ]
+    readonly_fields = [
+        "first_joined",
+        "last_joined",
+    ]
+    search_fields = [
+        "main_character__character_name",
+        "first_main_character__character_name",
+        "main_character__character_ownership__user__username",
+    ]
+    list_filter = [
+        "awarded_title",
+        "first_joined",
+        "last_joined",
+    ]
 
     @admin.display(
-        description="Main Char.",
-        ordering="user__profile__main_character__character_name",
+        description="User",
+        ordering="main_character__character_ownership__user",
     )
-    def get_main(self, obj):
-        return obj.main_character
+    def get_user(self, obj):
+        return obj.user
 
 
 @admin.register(Character)
