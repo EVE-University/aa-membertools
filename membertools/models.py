@@ -254,7 +254,7 @@ class ApplicationForm(models.Model):
             main_applied = None
 
         try:
-            member = main_char.next_character.member
+            member = main_char.next_member
             try:
                 member_awarded = member.awarded_title
             except AttributeError:

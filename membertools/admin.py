@@ -21,16 +21,35 @@ from .models import (
 
 @admin.register(Member)
 class MemberDetailAdmin(admin.ModelAdmin):
-    list_display = ["get_main", "user", "awarded_title", "first_joined", "last_joined"]
-    readonly_fields = ["first_joined", "last_joined"]
-    search_fields = ["user__profile__main_character__character_name", "user"]
+    list_display = [
+        "main_character",
+        "first_main_character",
+        "get_user",
+        "awarded_title",
+        "first_joined",
+        "last_joined",
+    ]
+    readonly_fields = [
+        "first_joined",
+        "last_joined",
+    ]
+    search_fields = [
+        "main_character__character_name",
+        "first_main_character__character_name",
+        "main_character__character_ownership__user__username",
+    ]
+    list_filter = [
+        "awarded_title",
+        "first_joined",
+        "last_joined",
+    ]
 
     @admin.display(
-        description="Main Char.",
-        ordering="user__profile__main_character__character_name",
+        description="User",
+        ordering="main_character__character_ownership__user",
     )
-    def get_main(self, obj):
-        return obj.main_character
+    def get_user(self, obj):
+        return obj.user
 
 
 @admin.register(Character)
@@ -39,12 +58,39 @@ class CharacterAdmin(admin.ModelAdmin):
         "eve_character",
         "corporation",
         "alliance",
-        "main_character",
-        "online_last_login",
+        "get_main",
+        "applied_title",
+        "get_last_login",
         "location",
     )
-    readonly_fields = ("birthday", "description", "security_status", "title")
-    search_fields = ["character", "main_character"]
+    list_filter = (
+        "applied_title",
+        "eve_character__memberaudit_character__online_status__last_login",
+    )
+    readonly_fields = (
+        "birthday",
+        "description",
+        "security_status",
+        "title",
+    )
+    search_fields = [
+        "eve_character__character_name",
+        "eve_character__character_ownership__user__profile__main_character__character_name",
+    ]
+
+    @admin.display(
+        description="Main",
+        ordering="eve_character__character_ownership__user__profile__main_character",
+    )
+    def get_main(self, obj):
+        return obj.main_character
+
+    @admin.display(
+        description="Last Login",
+        ordering="eve_character__memberaudit_character__online_status__last_login",
+    )
+    def get_last_login(self, obj):
+        return obj.online_last_login
 
 
 @admin.register(Application)
