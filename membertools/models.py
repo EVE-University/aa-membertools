@@ -1,7 +1,6 @@
 # Standard Library
 import ast
 import unicodedata
-from datetime import timedelta
 
 # Third Party
 from sortedm2m.fields import SortedManyToManyField
@@ -11,7 +10,6 @@ from django.apps import apps
 from django.contrib.auth.models import Group, User
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import models
-from django.db.models import Q
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.utils.formats import date_format
@@ -226,18 +224,9 @@ class ApplicationForm(models.Model):
             logger.debug("User %s has no main character.", user)
             return []
 
-        # TODO: Add settings param for this timedelta
         base_app_query = self.applications.filter(
             eve_character__character_ownership__user=user
-        ).filter(
-            Q(closed_on__isnull=False)
-            & Q(closed_on__lte=timezone.now() + timedelta(minutes=5))
-            | (
-                ~Q(status=Application.DECISION_ACCEPT)
-                & ~Q(status=Application.DECISION_REJECT)
-                & ~Q(status=Application.DECISION_WITHDRAW)
-            )
-        )
+        ).exclude(status=Application.STATUS_CLOSED)
 
         owned_chars = [
             co.character for co in CharacterOwnership.objects.filter(user=user)

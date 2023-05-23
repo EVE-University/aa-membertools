@@ -8,6 +8,7 @@ from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
 from allianceauth.tests.auth_utils import AuthUtils
 
 from ..models import (
+    Application,
     ApplicationForm,
     ApplicationQuestion,
     ApplicationTitle,
@@ -233,6 +234,136 @@ class TestModelAppForm(TestCase):
         AuthUtils.connect_signals()
 
         self.assertEqual(self.corp_app_form.get_user_eligible_chars(user), [])
+
+    def test_app_form_is_available_to_previous_applicant(self):
+        eve_char = EveCharacter.objects.create(
+            character_id=1,
+            character_name="Applicant 1",
+            corporation_id=1,
+            corporation_name="Corp",
+            corporation_ticker="CORP",
+        )
+
+        user = AuthUtils.create_user("Applicant_1", disconnect_signals=True)
+
+        AuthUtils.disconnect_signals()
+        user.profile.main_character = eve_char
+        user.profile.save()
+
+        CharacterOwnership.objects.create(
+            user=user,
+            character=eve_char,
+            owner_hash="1",
+        )
+        AuthUtils.connect_signals()
+
+        member = Member.objects.create(
+            first_main_character=eve_char,
+            main_character=eve_char,
+        )
+
+        char = Character.objects.create(
+            eve_character=eve_char,
+            member=member,
+        )
+
+        Application.objects.create(
+            form=self.corp_app_form,
+            character=char,
+            eve_character=eve_char,
+            reviewer=eve_char,
+            decision_by=eve_char,
+            status=Application.STATUS_CLOSED,
+            decision=Application.DECISION_ACCEPT,
+        )
+
+        self.assertTrue(self.corp_app_form.user_has_eligible_chars(user))
+
+    def test_app_form_is_not_available_to_recent_applicant(self):
+        eve_char = EveCharacter.objects.create(
+            character_id=1,
+            character_name="Applicant 1",
+            corporation_id=1,
+            corporation_name="Corp",
+            corporation_ticker="CORP",
+        )
+
+        user = AuthUtils.create_user("Applicant_1", disconnect_signals=True)
+
+        AuthUtils.disconnect_signals()
+        user.profile.main_character = eve_char
+        user.profile.save()
+
+        CharacterOwnership.objects.create(
+            user=user,
+            character=eve_char,
+            owner_hash="1",
+        )
+        AuthUtils.connect_signals()
+
+        member = Member.objects.create(
+            first_main_character=eve_char,
+            main_character=eve_char,
+        )
+
+        char = Character.objects.create(
+            eve_character=eve_char,
+            member=member,
+        )
+
+        Application.objects.create(
+            form=self.corp_app_form,
+            character=char,
+            eve_character=eve_char,
+            reviewer=eve_char,
+            decision_by=eve_char,
+            status=Application.STATUS_PROCESSED,
+            decision=Application.DECISION_ACCEPT,
+        )
+
+        self.assertFalse(self.corp_app_form.user_has_eligible_chars(user))
+
+    def test_app_form_is_not_available_to_current_applicant(self):
+        eve_char = EveCharacter.objects.create(
+            character_id=1,
+            character_name="Applicant 1",
+            corporation_id=1,
+            corporation_name="Corp",
+            corporation_ticker="CORP",
+        )
+
+        user = AuthUtils.create_user("Applicant_1", disconnect_signals=True)
+
+        AuthUtils.disconnect_signals()
+        user.profile.main_character = eve_char
+        user.profile.save()
+
+        CharacterOwnership.objects.create(
+            user=user,
+            character=eve_char,
+            owner_hash="1",
+        )
+        AuthUtils.connect_signals()
+
+        member = Member.objects.create(
+            first_main_character=eve_char,
+            main_character=eve_char,
+        )
+
+        char = Character.objects.create(
+            eve_character=eve_char,
+            member=member,
+        )
+
+        Application.objects.create(
+            form=self.corp_app_form,
+            character=char,
+            eve_character=eve_char,
+            status=Application.STATUS_NEW,
+            decision=Application.DECISION_PENDING,
+        )
+
+        self.assertFalse(self.corp_app_form.user_has_eligible_chars(user))
 
     def test_title_form_is_available_for_member(self):
         char = EveCharacter.objects.create(
