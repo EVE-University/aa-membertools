@@ -101,7 +101,7 @@ class ApplicationAdmin(admin.ModelAdmin):
         "reviewer_character",
     )
     list_display = (
-        "character",
+        "eve_character",
         "main_character",
         "user",
         "submitted_on",
@@ -127,9 +127,9 @@ class ApplicationAdmin(admin.ModelAdmin):
     )
     ordering = ["-submitted_on"]
     search_fields = [
-        "character__character_name",
-        "user__profile__main_character__character_name",
-        "reviewer__profile__main_character__character_name",
+        "eve_character__character_name",
+        "eve_character__character_ownership__user__profile__main_character__character_name",
+        "reviewer__character_name",
     ]
 
 
