@@ -43,6 +43,7 @@ from .app_settings import (
     MEMBERTOOLS_COMMENT_SELF_DELETE_TIME,
     MEMBERTOOLS_COMMENT_SELF_EDIT_TIME,
     MEMBERTOOLS_MAIN_CORP_ID,
+    MEMBERTOOLS_TASKS_FOREGROUND_PRIORITY,
 )
 from .checks import Check
 from .forms import CommentForm, SearchForm
@@ -284,7 +285,13 @@ def hr_app_create_view(request, form_id):
                 defaults={"eve_character": selected_character, "member": member},
             )
 
-            tasks.update_character.delay(detail.id, True)
+            tasks.update_character.apply_async(
+                args=(
+                    detail.id,
+                    True,
+                ),
+                priority=MEMBERTOOLS_TASKS_FOREGROUND_PRIORITY,
+            )
 
             # Check if we have valid question answers
             valid = True

@@ -42,3 +42,19 @@ MEMBERTOOLS_COMMENT_SELF_DELETE_TIME = clean_setting(
     timedelta(minutes=15),
     required_type=timedelta,
 )
+
+# Tasks
+MEMBERTOOLS_TASKS_FOREGROUND_PRIORITY = clean_setting(
+    "MEMBERTOOLS_TASKS_FOREGROUND_PRIORITY",
+    8,
+    required_type=int,
+    min_value=1,
+    max_value=9,
+)
+MEMBERTOOLS_TASKS_BACKGROUND_PRIORITY = clean_setting(
+    "MEMBERTOOLS_TASKS_BACKGROUND_PRIORITY",
+    5,
+    required_type=int,
+    min_value=1,
+    max_value=9,
+)

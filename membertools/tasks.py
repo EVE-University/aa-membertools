@@ -22,7 +22,10 @@ from allianceauth.services.hooks import get_extension_logger
 from esi.errors import DjangoEsiException
 from esi.models import Token
 
-from .app_settings import MEMBERTOOLS_APP_ARCHIVE_TIME
+from .app_settings import (
+    MEMBERTOOLS_APP_ARCHIVE_TIME,
+    MEMBERTOOLS_TASKS_BACKGROUND_PRIORITY,
+)
 from .models import Application, Character, CharacterUpdateStatus, Member
 from .providers import esi
 
@@ -107,7 +110,10 @@ def update_all_characters(force=False):
             | Q(update_status__expires_on__lte=timezone.now())
         ).exclude(deleted=True)
     for char in query:
-        update_character.apply_async(kwargs={"character_id": char.id, "force": force})
+        update_character.apply_async(
+            kwargs={"character_id": char.id, "force": force},
+            priority=MEMBERTOOLS_TASKS_BACKGROUND_PRIORITY,
+        )
 
 
 @shared_task(**{**TASK_ESI_KWARGS, **{"bind": True}})
