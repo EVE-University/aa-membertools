@@ -44,5 +44,11 @@
     </tr>
         {% endfor %}
     {% endif %}
+    {% empty %}
+    <tr class="danger">
+        <td class="text-center" colspan="3">
+            <p class="lead" style="margin-bottom: 0;">{% translate "Required Steps checks are unavailable at this time. Please contact an Intake & Progression Officer if this issue persits." %}</p>
+        </td>
+    </tr>
     {% endfor %}
 </table>

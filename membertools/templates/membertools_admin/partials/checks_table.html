@@ -44,5 +44,11 @@
     </tr>
         {% endfor %}
     {% endif %}
+    {% empty %}
+    <tr class="danger">
+        <td class="text-center" colspan="3">
+            <p class="lead" style="margin-bottom: 0;">{% translate "Required Steps checks are unavailable. This is likely due to the character ownership information having been deleted." %}</p>
+        </td>
+    </tr>
     {% endfor %}
 </table>
