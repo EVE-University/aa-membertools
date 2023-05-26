@@ -117,7 +117,7 @@ class ApplicationAdmin(admin.ModelAdmin):
         "submitted_on",
         "closed_on",
         "status_on",
-        "reviewer",
+        ("reviewer", admin.RelatedOnlyFieldListFilter),
     )
     readonly_fields = (
         "submitted_on",
@@ -219,8 +219,8 @@ class ApplicationActionAdmin(admin.ModelAdmin):
         "application__form",
         "action",
         "action_on",
-        "action_by",
-        "override_by",
+        ("action_by", admin.RelatedOnlyFieldListFilter),
+        ("override_by", admin.RelatedOnlyFieldListFilter),
     ]
     search_fields = ["application__character", "action_by", "override_by"]
 
