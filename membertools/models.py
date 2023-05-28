@@ -313,7 +313,7 @@ class ApplicationForm(models.Model):
                         logger.debug("Alt already has title")
                         continue
                 else:
-                    if self.title <= member_awarded and self.title == char_applied:
+                    if self.title <= member_awarded and self.title <= char_applied:
                         logger.debug("Not showing already passed/earned title for main")
                         continue
 
