@@ -174,7 +174,9 @@ def hr_app_dashboard_view(request):
     )
 
     available_forms = []
-    for form in ApplicationForm.objects.all():
+    for form in ApplicationForm.objects.order_by(
+        "corp__corporation_name", "title"
+    ).all():
         chars = form.get_user_eligible_chars(request.user)
         if not len(chars):
             continue
