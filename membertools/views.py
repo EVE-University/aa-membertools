@@ -1490,7 +1490,7 @@ def hr_admin_withdraw_action(request, app_id):
         "membertools.admin_access",
         "membertools.application_admin_access",
         "membertools.view_application",
-        "membertools.manage_applications",
+        "membertools.manage_application",
     ]
 )
 def hr_admin_close_action(request, app_id):
