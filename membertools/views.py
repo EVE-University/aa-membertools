@@ -311,13 +311,17 @@ def hr_app_create_view(request, form_id):
             if not valid:
                 raise ValidationError("Question answers are invalid.")
 
-            if Application.objects.filter(
-                form=form,
-                eve_character=selected_character,
-                character=detail,
-                status=Application.STATUS_NEW,
-            ).exists():
-                raise IntegrityError("Application already exists.")
+            if (
+                Application.objects.filter(
+                    form=form,
+                    eve_character=selected_character,
+                )
+                .exclude(status=Application.STATUS_CLOSED)
+                .exists()
+            ):
+                raise IntegrityError(
+                    f"A pending application already exists for: {form}"
+                )
 
             application = Application.objects.create(
                 form=form,
