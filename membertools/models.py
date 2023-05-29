@@ -348,7 +348,7 @@ class Application(models.Model):
         ),
         STATUS_REVIEW: _("Your application is currently being reviewed."),
         STATUS_WAIT: _(
-            "Your application has been reviewed and more information may be required. Check your EVE Mail for more information."
+            "Your application is under review. If we need more information from you, we will contact you by EVE Mail."
         ),
         STATUS_PROCESSED: _(
             "Your application has been processed. Check your EVE Mail for more information."
