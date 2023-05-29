@@ -436,6 +436,7 @@ def hr_admin_queue_view(request):
     new_applications = base_app_query.filter(status=Application.STATUS_NEW)
     waiting_applications = base_app_query.filter(status=Application.STATUS_WAIT)
     review_applications = base_app_query.filter(status=Application.STATUS_REVIEW)
+    recent_applications = base_app_query.filter(status=Application.STATUS_PROCESSED)
 
     # Always show users applications they have locked even if they lose access to them after locking.
     user_review = (
@@ -449,6 +450,7 @@ def hr_admin_queue_view(request):
         new_applications = new_applications.filter(form__in=user_forms)
         waiting_applications = waiting_applications.filter(form__in=user_forms)
         review_applications = review_applications.filter(form__in=user_forms)
+        recent_applications = recent_applications.filter(form__in=user_forms)
 
     logger.debug(
         "Retrieved New: %d, Pending: %d, Review: %d, User Review: %d",
@@ -462,6 +464,7 @@ def hr_admin_queue_view(request):
         "new_applications": new_applications.order_by("submitted_on"),
         "waiting_applications": waiting_applications.order_by("submitted_on"),
         "review_applications": review_applications.order_by("submitted_on"),
+        "recent_applications": recent_applications.order_by("submitted_on"),
         "user_review_applications": user_review,
     }
 

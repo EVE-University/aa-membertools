@@ -4,9 +4,9 @@
 {% load i18n %}
 
 {% block inside_content %}
-{% if perm.membertools.review_applications and recruiter_forms %}
+{% if perms.membertools.review_application and recruiter_forms %}
 <div class="panel panel-primary">
-    <div class="panel-heading"><b>{% translate "Your Active Applications" %}</b></div>
+    <div class="panel-heading"><b>{% translate "Your Claimed Applications" %}</b></div>
     {% if user_review_applications %}
     {% include "membertools_admin/partials/app_queue.html" with applications=user_review_applications %}
     {% else %}

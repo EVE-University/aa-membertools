@@ -6,29 +6,35 @@
 {% block inside_content %}
 {% if user_review_applications %}
 <div class="panel panel-warning">
-    <div class="panel-heading"><b>{% translate "Your Active Applications" %}</b></div>
+    <div class="panel-heading"><b>{% translate "Your Claimed Applications" %}</b></div>
     {% include "membertools_admin/partials/app_queue.html" with applications=user_review_applications %}
 </div>
 {%  endif %}
 <ul class="nav nav-tabs">
     <li class="active"><a data-toggle="tab" href="#new">{% trans "New" %}{% if new_applications.count %} <span class="badge">{{ new_applications.count }}{% endif %}</a></li>
     <li><a data-toggle="tab" href="#waiting">{% trans "Waiting" %}{% if waiting_applications.count %} <span class="badge">{{ waiting_applications.count }}{% endif %}</a></li>
-    <li><a data-toggle="tab" href="#review">{% trans "Under Review" %}{% if review_applications.count %} <span class="badge">{{ review_applications.count }}{% endif %}</a></li>
+    <li><a data-toggle="tab" href="#active">{% trans "Active" %}{% if review_applications.count %} <span class="badge">{{ review_applications.count }}{% endif %}</a></li>
+    <li><a data-toggle="tab" href="#recent">{% trans "Recent" %}{% if recent_applications.count %} <span class="badge">{{ recent_applications.count }}{% endif %}</a></li>
 </ul>
 <div class="tab-content">
     <div id="new" class="tab-pane fade in active panel panel-default">
         <div class="panel-body">
-        {% include "membertools_admin/partials/app_queue.html" with applications=new_applications%}
+        {% include "membertools_admin/partials/app_queue.html" with applications=new_applications %}
         </div>
     </div>
     <div id="waiting" class="tab-pane fade panel panel-default">
         <div class="panel-body">
-        {% include "membertools_admin/partials/app_queue.html" with applications=waiting_applications%}
+        {% include "membertools_admin/partials/app_queue.html" with applications=waiting_applications %}
         </div>
     </div>
-    <div id="review" class="tab-pane fade panel panel-default">
+    <div id="active" class="tab-pane fade panel panel-default">
         <div class="panel-body">
-        {% include "membertools_admin/partials/app_queue.html" with applications=review_applications%}
+        {% include "membertools_admin/partials/app_queue.html" with applications=review_applications %}
+        </div>
+    </div>
+    <div id="recent" class="tab-pane fade panel panel-default">
+        <div class="panel-body">
+        {% include "membertools_admin/partials/app_queue.html" with applications=recent_applications %}
         </div>
     </div>
 </div>
