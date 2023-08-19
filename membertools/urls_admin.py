@@ -20,6 +20,11 @@ urlpatterns = [
         name="comment_create",
     ),
     path(
+        "view/<int:app_id>/update_memberaudit",
+        views.hr_admin_app_update_memberaudit,
+        name="memberaudit_update",
+    ),
+    path(
         "view/<int:app_id>/comment/<int:comment_id>/edit",
         views.hr_admin_comment_edit,
         name="comment_edit",
@@ -63,6 +68,11 @@ urlpatterns = [
         "char/eve_id/<int:char_id>",
         views.hr_admin_char_detail_lookup,
         name="char_detail_lookup",
+    ),
+    path(
+        "char/<int:char_id>/update_memberaudit",
+        views.hr_admin_char_update_memberaudit,
+        name="char_detail_memberaudit_update",
     ),
     path(
         "char/<int:char_detail_id>",

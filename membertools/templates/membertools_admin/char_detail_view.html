@@ -49,6 +49,18 @@
         </div>
     </div>
     {% endif %}
+    <div class="row">
+        <div class="panel panel-primary">
+            <div class="panel-heading">{% translate "Actions" %}</div>
+            <div class="panel-body text-center">
+            {% if perms.membertools.view_comment and perms.membertools.add_comment %}
+                <button id="add-comment-button" type="button" class="btn btn-primary">{% translate "Comment" %}</button>
+            {% endif %}
+                <a href="{% url 'membertools_admin:char_detail_memberaudit_update' char_detail.id %}" class="btn btn-primary">Update MA</a>
+            </div>
+        </div>
+    </div>
+
     {% if comments and perms.membertools.view_comment %}
     <div class="row">
         <div class="panel panel-primary">
@@ -60,8 +72,13 @@
     </div>
     {% endif %}
     {% if perms.membertools.add_comment and not edit_comment %}
-    <div class="row panel panel-primary add-comment-panel">
-        <div class="panel-heading">{% translate "Add Comment" %}</div>
+    <div class="row panel panel-primary add-comment-panel" id="add-comment-panel">
+        <div class="panel-heading">
+            {% translate "Add Comment" %}
+            <button type="button" class="close" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
         <div class="panel-body">
             <form class="form-signin" role="form" method="POST" action="{% url 'membertools_admin:char_detail_comment_create' char_detail.id %}">
                 {% csrf_token %}

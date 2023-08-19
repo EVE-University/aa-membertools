@@ -3,6 +3,8 @@ import unicodedata
 
 # Third Party
 import humanize
+from memberaudit.models import Character as MA_Character
+from memberaudit.tasks import update_character as ma_update_character
 
 # Django
 from django.apps import apps
@@ -573,10 +575,52 @@ def hr_admin_view(request, app_id, comment_form=None, edit_comment=None):
     is_recruiter = app.form.is_user_recruiter(request.user)
     is_manager = app.form.is_user_manager(request.user)
 
+    if hasattr(details, "update_status"):
+        if details.update_status.last_modified_on:
+            last_update_str = date_format(
+                details.update_status.last_modified_on,
+                format="SHORT_DATETIME_FORMAT",
+                use_l10n=True,
+            )
+        else:
+            last_update_str = "Never"
+
+        if details.update_status.expires_on:
+            expires_on_str = date_format(
+                details.update_status.expires_on,
+                format="SHORT_DATETIME_FORMAT",
+                use_l10n=True,
+            )
+        else:
+            expires_on_str = "N/A"
+    else:
+        last_update_str = "Never"
+        expires_on_str = "N/A"
+
+    ma_update_status = details.memberaudit_update_status
+    ma_last_updated = details.memberaudit_last_updated
+
+    if ma_last_updated is not None:
+        ma_last_updated_str = date_format(
+            ma_last_updated,
+            format="SHORT_DATETIME_FORMAT",
+            use_l10n=True,
+        )
+    else:
+        ma_last_updated_str = "N/A"
+
     if is_auditor or is_recruiter:
         context = {
-            "page_title": _("View Application") + f": {app.character}",
-            "sub_title": app.form,
+            "page_title": _("View Application")
+            + f": {app.form} \u2014 {app.character}",
+            "sub_title": "Last Modified: {} \u2014 Expires: {}".format(
+                last_update_str,
+                expires_on_str,
+            ),
+            "subsub_title": "Last MA Status: {} \u2014 Last Update: {}".format(
+                ma_update_status,
+                ma_last_updated_str,
+            ),
             "app": app,
             "char_detail": details,
             "corp_history": details.corporation_history.order_by("-record_id").all(),
@@ -692,11 +736,27 @@ def hr_admin_char_detail_view(
         last_update_str = "Never"
         expires_on_str = "N/A"
 
+    ma_update_status = detail.memberaudit_update_status
+    ma_last_updated = detail.memberaudit_last_updated
+
+    if ma_last_updated is not None:
+        ma_last_updated_str = date_format(
+            ma_last_updated,
+            format="SHORT_DATETIME_FORMAT",
+            use_l10n=True,
+        )
+    else:
+        ma_last_updated_str = "N/A"
+
     context = {
         "page_title": f"View Character: {detail.eve_character}",
         "sub_title": "Last Modified: {} \u2014 Expires: {}".format(
             last_update_str,
             expires_on_str,
+        ),
+        "subsub_title": "Last MA Status: {} \u2014 Last Update: {}".format(
+            ma_update_status,
+            ma_last_updated_str,
         ),
         "char_detail": detail,
         "corp_history": detail.corporation_history.order_by("-record_id").all(),
@@ -762,6 +822,59 @@ def hr_admin_char_detail_lookup(request, char_id):
         tasks.update_character.apply(args=[detail.id, True])
 
     return redirect("membertools_admin:char_detail_view", detail.id)
+
+
+@login_required
+@permission_required(["membertools.admin_access", "membertools.character_admin_access"])
+def hr_admin_char_update_memberaudit(request, char_id):
+    logger.debug("hr_admin_char_update_memberaudit called for char id %d", char_id)
+    char = get_object_or_404(Character, pk=char_id)
+    try:
+        ma_char = MA_Character.objects.get(eve_character=char.eve_character)
+    except ObjectDoesNotExist:
+        ma_char = None
+
+    if ma_char is not None:
+        ma_char.reset_update_section("skills")
+        ma_char.reset_update_section("wallet_balance")
+        ma_update_character.apply_async(
+            kwargs={"character_pk": ma_char.pk, "force_update": True},
+            priority=MEMBERTOOLS_TASKS_FOREGROUND_PRIORITY,
+        )
+    else:
+        messages.warning(
+            request, f"{char.character_name} is not registered with Member Audit."
+        )
+
+    return redirect("membertools_admin:char_detail_view", char.id)
+
+
+@login_required
+@permission_required(
+    ["membertools.admin_access", "membertools.application_admin_access"]
+)
+def hr_admin_app_update_memberaudit(request, app_id):
+    logger.debug("hr_admin_app_update_memberaudit called for app id %d", app_id)
+    app = get_object_or_404(Application, pk=app_id)
+    try:
+        ma_char = MA_Character.objects.get(eve_character=app.character.eve_character)
+    except ObjectDoesNotExist:
+        ma_char = None
+
+    if ma_char is not None:
+        ma_char.reset_update_section("skills")
+        ma_char.reset_update_section("wallet_balance")
+        ma_update_character.apply_async(
+            kwargs={"character_pk": ma_char.pk, "force_update": True},
+            priority=MEMBERTOOLS_TASKS_FOREGROUND_PRIORITY,
+        )
+    else:
+        messages.warning(
+            request,
+            f"{app.character.character_name} is not registered with Member Audit.",
+        )
+
+    return redirect("membertools_admin:view", app.id)
 
 
 @login_required

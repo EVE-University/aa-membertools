@@ -93,6 +93,7 @@
             {% if perms.membertools.delete_application and is_manager %}
                 <a href="{% url 'membertools_admin:remove' app.id %}" class="btn btn-danger">{% translate "Delete" %}</a>
             {% endif %}
+                <a href="{% url 'membertools_admin:memberaudit_update' app.id %}" class="btn btn-primary">Update MA</a>
             </div>
         </div>
     </div>

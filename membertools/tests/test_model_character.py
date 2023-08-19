@@ -303,6 +303,99 @@ class TestModelCharacter(TestCase):
         self.assertEqual(char.memberaudit_character, None)
 
     @patch("membertools.models.Character._get_ma_character")
+    def test_memberaudit_update_status_not_exists(self, ma_char_mock):
+        ma_char_mock.return_value = None
+
+        char = Character.objects.create(
+            eve_character=self.applicant_eve_char,
+            member=None,
+        )
+
+        self.assertEqual(char.memberaudit_update_status, "Not Registered")
+
+    @patch("membertools.models.Character._get_ma_character")
+    def test_memberaudit_update_status_okay(self, ma_char_mock):
+        ma_char_mock.return_value.is_update_status_ok.return_value = True
+
+        char = Character.objects.create(
+            eve_character=self.applicant_eve_char,
+            member=None,
+        )
+
+        self.assertEqual(char.memberaudit_update_status, "Okay")
+
+    @patch("membertools.models.Character._get_ma_character")
+    def test_memberaudit_update_status_updating(self, ma_char_mock):
+        ma_char_mock.return_value.is_update_status_ok.return_value = None
+
+        char = Character.objects.create(
+            eve_character=self.applicant_eve_char,
+            member=None,
+        )
+
+        self.assertEqual(char.memberaudit_update_status, "Updating")
+
+    @patch("membertools.models.Character._get_ma_character")
+    def test_memberaudit_update_status_error(self, ma_char_mock):
+        ma_char_mock.return_value.is_update_status_ok.return_value = False
+
+        char = Character.objects.create(
+            eve_character=self.applicant_eve_char,
+            member=None,
+        )
+
+        self.assertEqual(char.memberaudit_update_status, "Error")
+
+    @patch("membertools.models.Character._get_ma_character")
+    def test_memberaudit_last_updated_char_not_exists(self, ma_char_mock):
+        ma_char_mock.return_value = None
+
+        char = Character.objects.create(
+            eve_character=self.applicant_eve_char,
+            member=None,
+        )
+
+        self.assertEqual(char.memberaudit_last_updated, None)
+
+    @patch("membertools.models.Character._get_ma_character")
+    def test_memberaudit_last_updated_no_char_update_exists(self, ma_char_mock):
+        ma_char_mock.return_value.update_status_set = Mock(spec=[])
+
+        char = Character.objects.create(
+            eve_character=self.applicant_eve_char,
+            member=None,
+        )
+
+        self.assertEqual(char.memberaudit_last_updated, None)
+
+    @patch("membertools.models.Character._get_ma_character")
+    def test_memberaudit_last_updated_no_char_update_success_exists(self, ma_char_mock):
+        ma_char_mock.return_value.update_status_set.filter.side_effect = (
+            ObjectDoesNotExist
+        )
+
+        char = Character.objects.create(
+            eve_character=self.applicant_eve_char,
+            member=None,
+        )
+
+        self.assertEqual(char.memberaudit_last_updated, None)
+
+    @patch("membertools.models.Character._get_ma_character")
+    def test_memberaudit_last_updated_success(self, ma_char_mock):
+        test_datetime = parse_datetime("2020-01-01 00:00Z")
+        ma_char_mock.return_value.update_status_set.filter.return_value.latest.return_value.finished_at = (
+            test_datetime
+        )
+
+        char = Character.objects.create(
+            eve_character=self.applicant_eve_char,
+            member=None,
+        )
+
+        self.assertEqual(char.memberaudit_last_updated, test_datetime)
+
+    @patch("membertools.models.Character._get_ma_character")
     def test_location_char_exists(self, ma_char_mock):
         # This property actually returns memberaudit.models.general.Location, but we don't have to
         # mock or use that type here for the test to effectively be valid.

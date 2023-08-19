@@ -899,6 +899,37 @@ class Character(models.Model):
     def memberaudit_character(self):
         return Character._get_ma_character(self.eve_character)
 
+    @property
+    def memberaudit_update_status(self):
+        char = Character._get_ma_character(self.eve_character)
+        if char is None:
+            return "Not Registered"
+
+        status = char.is_update_status_ok()
+
+        if status:
+            return "Okay"
+        elif status is False:
+            return "Error"
+        else:
+            return "Updating"
+
+    @property
+    def memberaudit_last_updated(self):
+        char = Character._get_ma_character(self.eve_character)
+
+        try:
+            update_status = char.update_status_set.filter(is_success=True).latest(
+                "finished_at"
+            )
+        except (AttributeError, ObjectDoesNotExist):
+            update_status = None
+
+        if update_status is None:
+            return None
+
+        return update_status.finished_at
+
     @cached_property
     def location(self):
         character = Character._get_ma_character(self.eve_character)
