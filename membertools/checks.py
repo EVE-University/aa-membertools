@@ -99,6 +99,7 @@ class Check:
     def _do_check_verified(self):
         title = _("Character Verification")
         status = None
+        failed = 0
         messages = []
 
         CharacterOwnership = apps.get_model("authentication", "CharacterOwnership")
@@ -115,12 +116,14 @@ class Check:
         else:
             status = self.CHECK_FAILED
             reason = _("Ownership needs to be verified")
+            failed += 1
             messages.append({"message": reason, "status": self.CHECK_FAILED})
 
         self._check_cache["verified"] = {
             "title": title,
             "status": status,
             "reason": reason,
+            "failed": failed,
             "messages": messages,
         }
 
@@ -154,18 +157,29 @@ class Check:
                 failed += 1
                 messages.append({"message": reason, "status": self.CHECK_FAILED})
 
-            if char is not None and char.is_update_status_ok():
-                messages.append(
-                    {
-                        "message": _("Character ESI token is valid"),
-                        "status": self.CHECK_PASSED,
-                    }
-                )
-            else:
-                status = self.CHECK_FAILED
-                reason = _("Invalid ESI token, please delete and re-register character")
-                failed += 1
-                messages.append({"message": reason, "status": self.CHECK_FAILED})
+            if char is not None:
+                update_status = char.is_update_status_ok()
+
+                if update_status:
+                    messages.append(
+                        {
+                            "message": _(
+                                "Character details have successfully been updated"
+                            ),
+                            "status": self.CHECK_PASSED,
+                        }
+                    )
+                elif update_status is False:
+                    status = self.CHECK_FAILED
+                    reason = _(
+                        "Invalid ESI token, please delete and re-register character"
+                    )
+                    failed += 1
+                    messages.append({"message": reason, "status": self.CHECK_FAILED})
+                else:
+                    status = self.CHECK_WARNING
+                    reason = _("Character details are being updated")
+                    messages.append({"message": reason, "status": self.CHECK_WARNING})
 
             if char is not None and char.is_shared:
                 messages.append(
@@ -192,6 +206,7 @@ class Check:
             "title": title,
             "status": status,
             "reason": reason,
+            "failed": failed,
             "messages": messages,
         }
 
@@ -254,6 +269,7 @@ class Check:
             "title": title,
             "status": status,
             "reason": reason,
+            "failed": failed,
             "messages": messages,
         }
 
@@ -263,6 +279,7 @@ class Check:
         title = _("Mumble")
         status = self.CHECK_PASSED
         reason = _("All checks passed")
+        failed = 0
         messages = []
 
         if apps.is_installed("allianceauth.services.modules.mumble"):
@@ -282,6 +299,7 @@ class Check:
                 reason = _(
                     "Mumble account is not active, please reset account in Services"
                 )
+                failed += 1
                 messages.append({"message": reason, "status": self.CHECK_FAILED})
         else:
             status = self.CHECK_DISABLED
@@ -292,6 +310,7 @@ class Check:
             "title": title,
             "status": status,
             "reason": reason,
+            "failed": failed,
             "messages": messages,
         }
 
@@ -299,6 +318,7 @@ class Check:
         title = _("phpBB3")
         status = self.CHECK_PASSED
         reason = _("All checks passed")
+        failed = 0
         messages = []
 
         if apps.is_installed("allianceauth.services.modules.phpbb3"):
@@ -318,6 +338,7 @@ class Check:
                 reason = _(
                     "PhpBB3 (Forum) account is not active, please reset account in Services"
                 )
+                failed += 1
                 messages.append({"message": reason, "status": self.CHECK_FAILED})
         else:
             status = self.CHECK_DISABLED
@@ -328,6 +349,7 @@ class Check:
             "title": title,
             "status": status,
             "reason": reason,
+            "failed": failed,
             "messages": messages,
         }
 
@@ -335,6 +357,7 @@ class Check:
         title = _("Forum")
         status = self.CHECK_PASSED
         reason = _("All checks passed")
+        failed = 0
         messages = []
 
         if apps.is_installed("eunicore.phpbb3"):
@@ -354,6 +377,7 @@ class Check:
                 reason = _(
                     "Forum account is not active, please reset account in Services"
                 )
+                failed += 1
                 messages.append({"message": reason, "status": self.CHECK_FAILED})
         else:
             status = self.CHECK_DISABLED
@@ -364,5 +388,6 @@ class Check:
             "title": title,
             "status": status,
             "reason": reason,
+            "failed": failed,
             "messages": messages,
         }
