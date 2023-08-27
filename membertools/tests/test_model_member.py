@@ -2,8 +2,11 @@
 import datetime
 from unittest.mock import patch
 
+# Third Party
+from app_utils.testing import NoSocketsTestCase
+
 # Django
-from django.test import TestCase
+from django.utils.dateparse import parse_datetime
 
 # Alliance Auth
 from allianceauth.authentication.models import CharacterOwnership
@@ -13,7 +16,7 @@ from allianceauth.tests.auth_utils import AuthUtils
 from ..models import ApplicationForm, ApplicationQuestion, ApplicationTitle, Member
 
 
-class TestModelMember(TestCase):
+class TestModelMember(NoSocketsTestCase):
     @classmethod
     def setUpTestData(cls):
         cls.corp = EveCorporationInfo.objects.create(
@@ -209,23 +212,25 @@ class TestModelMember(TestCase):
 
         self.assertEqual(member.characters, [eve_char])
 
+    # Patching the SwaggerClient results in the same mocked client being reused in
+    # other tests that use the client. So, we can only accurately run this test once.
     @patch("esi.clients.SwaggerClient")
     @patch("membertools.models.MEMBERTOOLS_MAIN_CORP_ID", 10)
     def test_update_joined_dates_once(self, client_mock):
-        self.skipTest("Need to rework with a stub client")
+        self.skipTest("Need to update joined date tests to use swagger stub client")
         test_datetime = datetime.datetime(2020, 1, 2, 1, 0, 0, 0, datetime.timezone.utc)
         history_data = [
-            {
-                "corporation_id": 1,
-                "is_deleted": False,
-                "record_id": 1,
-                "start_date": "2020-01-01T01:00:00Z",
-            },
             {
                 "corporation_id": self.corp.corporation_id,
                 "is_deleted": False,
                 "record_id": 2,
-                "start_date": "2020-01-02T01:00:00Z",
+                "start_date": parse_datetime("2020-01-02T01:00:00Z"),
+            },
+            {
+                "corporation_id": 1,
+                "is_deleted": False,
+                "record_id": 1,
+                "start_date": parse_datetime("2020-01-01T01:00:00Z"),
             },
         ]
         client_mock.from_spec.return_value.Character.get_characters_character_id_corporationhistory.return_value.results.return_value = (
@@ -257,25 +262,25 @@ class TestModelMember(TestCase):
                 "corporation_id": self.corp.corporation_id,
                 "is_deleted": False,
                 "record_id": 4,
-                "start_date": "2020-01-04T01:00:00Z",
+                "start_date": parse_datetime("2020-01-04T01:00:00Z"),
             },
             {
                 "corporation_id": 1,
                 "is_deleted": False,
                 "record_id": 3,
-                "start_date": "2020-01-03T01:00:00Z",
+                "start_date": parse_datetime("2020-01-03T01:00:00Z"),
             },
             {
                 "corporation_id": self.corp.corporation_id,
                 "is_deleted": False,
                 "record_id": 2,
-                "start_date": "2020-01-02T01:00:00Z",
+                "start_date": parse_datetime("2020-01-02T01:00:00Z"),
             },
             {
                 "corporation_id": 1,
                 "is_deleted": False,
                 "record_id": 1,
-                "start_date": "2020-01-01T01:00:00Z",
+                "start_date": parse_datetime("2020-01-01T01:00:00Z"),
             },
         ]
 
@@ -288,7 +293,7 @@ class TestModelMember(TestCase):
             first_main_character=self.member_eve_char,
         )
 
-        member.update_joined_dates()
+        self.assertTrue(member.update_joined_dates())
 
         client_mock.from_spec.return_value.Character.get_characters_character_id_corporationhistory.assert_called()
         client_mock.from_spec.return_value.Character.get_characters_character_id_corporationhistory.return_value.results.assert_called()

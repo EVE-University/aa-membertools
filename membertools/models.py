@@ -11,7 +11,6 @@ from django.contrib.auth.models import Group, User
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import models
 from django.utils import timezone
-from django.utils.dateparse import parse_datetime
 from django.utils.formats import date_format
 from django.utils.functional import cached_property
 from django.utils.html import strip_tags
@@ -789,8 +788,8 @@ class Member(models.Model):
         logger.debug("F: %s L: %s", first_join, last_join)
 
         if len(history):
-            self.first_joined = parse_datetime(first_join)
-            self.last_joined = parse_datetime(last_join)
+            self.first_joined = first_join
+            self.last_joined = last_join
             self.save()
 
         logger.debug("MF: %s ML: %s", self.first_joined, self.last_joined)
@@ -1078,6 +1077,7 @@ class CharacterCorpHistory(models.Model):
     objects = CharacterCorpHistoryManager()
 
     class Meta:
+        ordering = ("-record_id",)
         indexes = [
             models.Index(fields=["character"]),
             models.Index(fields=["record_id"]),
