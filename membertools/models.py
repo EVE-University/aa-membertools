@@ -919,7 +919,7 @@ class Character(models.Model):
 
         try:
             update_status = char.update_status_set.filter(is_success=True).latest(
-                "finished_at"
+                "run_finished_at"
             )
         except (AttributeError, ObjectDoesNotExist):
             update_status = None
@@ -927,7 +927,7 @@ class Character(models.Model):
         if update_status is None:
             return None
 
-        return update_status.finished_at
+        return update_status.run_finished_at
 
     @cached_property
     def location(self):

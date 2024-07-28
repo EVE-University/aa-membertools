@@ -386,7 +386,7 @@ class TestModelCharacter(TestCase):
     @patch("membertools.models.Character._get_ma_character")
     def test_memberaudit_last_updated_success(self, ma_char_mock):
         test_datetime = parse_datetime("2020-01-01 00:00Z")
-        ma_char_mock.return_value.update_status_set.filter.return_value.latest.return_value.finished_at = (
+        ma_char_mock.return_value.update_status_set.filter.return_value.latest.return_value.run_finished_at = (
             test_datetime
         )
 
