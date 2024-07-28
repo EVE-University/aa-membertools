@@ -244,21 +244,16 @@ class TestModelCharacter(TestCase):
 
         self.assertEqual(char.description_text, 'alert("alert");')
 
-    # pylint: disable=no-self-argument
-    def __get_ma_character_lookup_error_side_effect(*args, **kwargs):
-        # We have to conditionally call the original for this test as apps.get_model() can be
-        # called again during unpickling foreign key relationships.
-        if args[0] == "memberaudit" and args[1] == "Character":
-            raise LookupError()
-
-        TestModelCharacter.orig_get_model(*args, **kwargs)
-
-    @patch(
-        "django.apps.apps.get_model",
-        side_effect=__get_ma_character_lookup_error_side_effect,
-        # side_effect=LookupError,
-    )
+    @patch("django.apps.apps.get_model")
     def test__get_ma_character_model_lookup_error(self, model_mock):
+        # Make sure we only patch the get_model() return for the appropriate model
+        def _side_effect(*args, **kwargs):
+            if args[0] == "memberaudit" and args[1] == "Character":
+                raise LookupError()
+            return TestModelCharacter.orig_get_model(*args, **kwargs)
+
+        model_mock.side_effect = _side_effect
+
         # pylint: disable=protected-access
         ret = Character._get_ma_character(self.applicant_eve_char)
 
@@ -269,7 +264,14 @@ class TestModelCharacter(TestCase):
     def test__get_ma_character_not_exists(self, model_mock):
         ma_char_mock = Mock()
         ma_char_mock.objects.get.side_effect = ObjectDoesNotExist
-        model_mock.return_value = ma_char_mock
+
+        # Make sure we only patch the get_model() return for the appropriate model
+        def _side_effect(*args, **kwargs):
+            if args[0] == "memberaudit" and args[1] == "Character":
+                return ma_char_mock
+            return TestModelCharacter.orig_get_model(*args, **kwargs)
+
+        model_mock.side_effect = _side_effect
 
         # pylint: disable=protected-access
         ret = Character._get_ma_character(self.applicant_eve_char)
@@ -384,7 +386,7 @@ class TestModelCharacter(TestCase):
     @patch("membertools.models.Character._get_ma_character")
     def test_memberaudit_last_updated_success(self, ma_char_mock):
         test_datetime = parse_datetime("2020-01-01 00:00Z")
-        ma_char_mock.return_value.update_status_set.filter.return_value.latest.return_value.finished_at = (
+        ma_char_mock.return_value.update_status_set.filter.return_value.latest.return_value.run_finished_at = (
             test_datetime
         )
 
